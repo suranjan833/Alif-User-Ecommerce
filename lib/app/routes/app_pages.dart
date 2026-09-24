@@ -2,12 +2,50 @@
 
 import 'package:get/get.dart';
 
+import '../modules/checkout/bindings/checkout_binding.dart';
+import '../modules/checkout/views/checkout_view.dart';
+import '../modules/order_success/bindings/order_success_binding.dart';
+import '../modules/order_success/views/order_success_view.dart';
 import '../modules/account/bindings/account_binding.dart';
 import '../modules/account/views/account_view.dart';
 import '../modules/bag/bindings/bag_binding.dart';
 import '../modules/bag/views/bag_view.dart';
 import '../modules/categories/bindings/category_products_binding.dart';
 import '../modules/categories/views/category_products_view.dart';
+import '../modules/manage_addresses/bindings/manage_addresses_binding.dart';
+import '../modules/manage_addresses/views/manage_addresses_view.dart';
+import '../modules/my_orders/bindings/my_orders_binding.dart';
+import '../modules/my_orders/views/my_orders_view.dart';
+import '../modules/about_us/bindings/about_us_binding.dart';
+import '../modules/about_us/views/about_us_view.dart';
+import '../modules/privacy_policy/bindings/privacy_policy_binding.dart';
+import '../modules/privacy_policy/views/privacy_policy_view.dart';
+import '../modules/refund_policy/bindings/refund_policy_binding.dart';
+import '../modules/refund_policy/views/refund_policy_view.dart';
+import '../modules/shipping_policy/bindings/shipping_policy_binding.dart';
+import '../modules/shipping_policy/views/shipping_policy_view.dart';
+import '../modules/terms_and_conditions/bindings/terms_and_conditions_binding.dart';
+import '../modules/terms_and_conditions/views/terms_and_conditions_view.dart';
+import '../modules/my_profile/bindings/my_profile_binding.dart';
+import '../modules/my_profile/views/my_profile_view.dart';
+import '../modules/product_details/bindings/product_details_binding.dart';
+import '../modules/product_details/views/product_details_view.dart';
+import '../modules/seller_details/bindings/seller_details_binding.dart';
+import '../modules/seller_details/views/seller_details_view.dart';
+import '../modules/my_transactions/bindings/my_transactions_binding.dart';
+import '../modules/my_transactions/views/my_transactions_view.dart';
+import '../modules/my_wishlist/bindings/my_wishlist_binding.dart';
+import '../modules/my_wishlist/views/my_wishlist_view.dart';
+import '../modules/notifications/bindings/notifications_binding.dart';
+import '../modules/notifications/views/notifications_view.dart';
+import '../modules/refer_and_earn/bindings/refer_and_earn_binding.dart';
+import '../modules/refer_and_earn/views/refer_and_earn_view.dart';
+import '../modules/shopping_list/bindings/shopping_list_binding.dart';
+import '../modules/shopping_list/views/shopping_list_view.dart';
+import '../modules/support/bindings/support_binding.dart';
+import '../modules/support/views/support_view.dart';
+import '../modules/wallet/bindings/wallet_binding.dart';
+import '../modules/wallet/views/wallet_view.dart';
 import '../modules/categories/bindings/categories_binding.dart';
 import '../modules/categories/views/categories_view.dart';
 import '../modules/discover/bindings/discover_binding.dart';
@@ -98,6 +136,120 @@ class AppPages {
       page: () => const CategoryProductsView(),
       binding: CategoryProductsBinding(),
       transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.MY_PROFILE,
+      page: () => const MyProfileView(),
+      binding: MyProfileBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.MY_ORDERS,
+      page: () => const MyOrdersView(),
+      binding: MyOrdersBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.MANAGE_ADDRESSES,
+      page: () => const ManageAddressesView(),
+      binding: ManageAddressesBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.MY_TRANSACTIONS,
+      page: () => const MyTransactionsView(),
+      binding: MyTransactionsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.MY_WISHLIST,
+      page: () => const MyWishlistView(),
+      binding: MyWishlistBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.WALLET,
+      page: () => const WalletView(),
+      binding: WalletBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.SHOPPING_LIST,
+      page: () => const ShoppingListView(),
+      binding: ShoppingListBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.REFER_AND_EARN,
+      page: () => const ReferAndEarnView(),
+      binding: ReferAndEarnBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.NOTIFICATIONS,
+      page: () => const NotificationsView(),
+      binding: NotificationsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.SUPPORT,
+      page: () => const SupportView(),
+      binding: SupportBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.PRODUCT_DETAILS,
+      page: () => const ProductDetailsView(),
+      binding: ProductDetailsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.SELLER_DETAILS,
+      page: () => const SellerDetailsView(),
+      binding: SellerDetailsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.ABOUT_US,
+      page: () => const AboutUsView(),
+      binding: AboutUsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.TERMS_AND_CONDITIONS,
+      page: () => const TermsAndConditionsView(),
+      binding: TermsAndConditionsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.PRIVACY_POLICY,
+      page: () => const PrivacyPolicyView(),
+      binding: PrivacyPolicyBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.REFUND_POLICY,
+      page: () => const RefundPolicyView(),
+      binding: RefundPolicyBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.SHIPPING_POLICY,
+      page: () => const ShippingPolicyView(),
+      binding: ShippingPolicyBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.CHECKOUT,
+      page: () => const CheckoutView(),
+      binding: CheckoutBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: _Paths.ORDER_SUCCESS,
+      page: () => const OrderSuccessView(),
+      binding: OrderSuccessBinding(),
+      transition: Transition.fadeIn,
     ),
   ];
 }

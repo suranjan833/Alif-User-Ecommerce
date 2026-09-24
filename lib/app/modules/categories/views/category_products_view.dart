@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/category_products_controller.dart';
 
 class CategoryProductsView extends GetView<CategoryProductsController> {
@@ -329,197 +330,199 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
   Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
     final productId = product['id'] as String;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image Container with Badge, Wishlist Heart, and Add Floating Button
-          Stack(
-            children: [
-              Container(
-                height: 110.h,
-                width: double.infinity,
-                padding: EdgeInsets.all(8.r),
-                child: Center(
-                  child: Image.network(
-                    product['image'] as String,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      Iconsax.image,
-                      size: 32.r,
-                      color: AppColor.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Top Left Badge (e.g. "2 Pack")
-              if (product['badge'] != null)
-                Positioned(
-                  left: 8.w,
-                  top: 8.h,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 7.w,
-                      vertical: 3.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFBAE6FD),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Text(
-                      product['badge'] as String,
-                      style: GoogleFonts.inter(
-                        fontSize: 9.5.sp,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0284C7),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Top Right Wishlist Heart
-              Positioned(
-                right: 8.w,
-                top: 8.h,
-                child: Obx(() {
-                  final isWishlisted = controller.wishlistedProductIds.contains(
-                    productId,
-                  );
-                  return GestureDetector(
-                    onTap: () => controller.toggleWishlist(productId),
-                    child: Icon(
-                      isWishlisted ? Iconsax.heart5 : Iconsax.heart,
-                      size: 18.r,
-                      color: isWishlisted
-                          ? const Color(0xFFFBAF18)
-                          : const Color(0xFF9E9E9E),
-                    ),
-                  );
-                }),
-              ),
-
-              // Bottom Right Add Button (+)
-              Positioned(
-                right: 6.w,
-                bottom: 6.h,
-                child: GestureDetector(
-                  onTap: () => controller.addToCart(product),
-                  child: Container(
-                    width: 32.r,
-                    height: 32.r,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFBAF18),
-                      borderRadius: BorderRadius.circular(10.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.add_rounded,
-                        size: 22.r,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Product Info Section
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: () => Get.toNamed(Routes.PRODUCT_DETAILS, arguments: product),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Container with Badge, Wishlist Heart, and Add Floating Button
+            Stack(
               children: [
-                // Brand Name
-                Text(
-                  product['brand'] as String,
-                  style: GoogleFonts.inter(
-                    fontSize: 13.5.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColor.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 2.h),
-
-                // Product Title
-                Text(
-                  product['title'] as String,
-                  style: GoogleFonts.inter(
-                    fontSize: 11.5.sp,
-                    fontWeight: FontWeight.w400,
-                    color: AppColor.textSecondary,
-                    height: 1.25,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 6.h),
-
-                // Discount Text
-                Text(
-                  product['discount'] as String,
-                  style: GoogleFonts.inter(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF16A34A),
-                  ),
-                ),
-                SizedBox(height: 4.h),
-
-                // Dashed / Light Line Separator
                 Container(
-                  height: 1.h,
+                  height: 110.h,
                   width: double.infinity,
-                  color: const Color(0xFFF1F5F9),
+                  padding: EdgeInsets.all(8.r),
+                  child: Center(
+                    child: Image.network(
+                      product['image'] as String,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Iconsax.image,
+                        size: 32.r,
+                        color: AppColor.textSecondary,
+                      ),
+                    ),
+                  ),
                 ),
-                SizedBox(height: 6.h),
 
-                // Price Row
-                Row(
-                  children: [
-                    Text(
-                      '₹${product['price']}',
-                      style: GoogleFonts.inter(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w800,
-                        color: AppColor.textPrimary,
+                // Top Left Badge (e.g. "2 Pack")
+                if (product['badge'] != null)
+                  Positioned(
+                    left: 8.w,
+                    top: 8.h,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 7.w,
+                        vertical: 3.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFBAE6FD),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Text(
+                        product['badge'] as String,
+                        style: GoogleFonts.inter(
+                          fontSize: 9.5.sp,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF0284C7),
+                        ),
                       ),
                     ),
-                    SizedBox(width: 6.w),
-                    Text(
-                      '₹${product['originalPrice']}',
-                      style: GoogleFonts.inter(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w400,
-                        color: AppColor.textHint,
-                        decoration: TextDecoration.lineThrough,
+                  ),
+
+                // Top Right Wishlist Heart
+                Positioned(
+                  right: 8.w,
+                  top: 8.h,
+                  child: Obx(() {
+                    final isWishlisted = controller.wishlistedProductIds
+                        .contains(productId);
+                    return GestureDetector(
+                      onTap: () => controller.toggleWishlist(productId),
+                      child: Icon(
+                        isWishlisted ? Iconsax.heart5 : Iconsax.heart,
+                        size: 18.r,
+                        color: isWishlisted
+                            ? const Color(0xFFFBAF18)
+                            : const Color(0xFF9E9E9E),
+                      ),
+                    );
+                  }),
+                ),
+
+                // Bottom Right Add Button (+)
+                Positioned(
+                  right: 6.w,
+                  bottom: 6.h,
+                  child: GestureDetector(
+                    onTap: () => controller.addToCart(product),
+                    child: Container(
+                      width: 32.r,
+                      height: 32.r,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFBAF18),
+                        borderRadius: BorderRadius.circular(10.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.add_rounded,
+                          size: 22.r,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+
+            // Product Info Section
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Brand Name
+                  Text(
+                    product['brand'] as String,
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColor.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+
+                  // Product Title
+                  Text(
+                    product['title'] as String,
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5.sp,
+                      fontWeight: FontWeight.w400,
+                      color: AppColor.textSecondary,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 6.h),
+
+                  // Discount Text
+                  Text(
+                    product['discount'] as String,
+                    style: GoogleFonts.inter(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF16A34A),
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+
+                  // Dashed / Light Line Separator
+                  Container(
+                    height: 1.h,
+                    width: double.infinity,
+                    color: const Color(0xFFF1F5F9),
+                  ),
+                  SizedBox(height: 6.h),
+
+                  // Price Row
+                  Row(
+                    children: [
+                      Text(
+                        '₹${product['price']}',
+                        style: GoogleFonts.inter(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w800,
+                          color: AppColor.textPrimary,
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Text(
+                        '₹${product['originalPrice']}',
+                        style: GoogleFonts.inter(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w400,
+                          color: AppColor.textHint,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -197,11 +197,11 @@ class _TrackOrdersPainter extends CustomPainter {
     );
     canvas.drawPath(foldCrease, blackStroke..strokeWidth = 2.0);
 
-    // Dollar sign '$' at the top of receipt
+    // Rupee sign '₹' at the top of receipt
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     textPainter.text = TextSpan(
-      text: '\$',
+      text: '₹',
       style: TextStyle(
         color: const Color(0xFF1E222B),
         fontSize: 16.sp,
@@ -218,9 +218,9 @@ class _TrackOrdersPainter extends CustomPainter {
     wavePath.cubicTo(cx + 12, cy - 10, cx + 18, cy - 2, cx + 20, cy - 6);
     canvas.drawPath(wavePath, yellowStroke..strokeWidth = 2.4);
 
-    // Yellow '$' at bottom of receipt
+    // Yellow '₹' at bottom of receipt
     textPainter.text = TextSpan(
-      text: '\$',
+      text: '₹',
       style: TextStyle(
         color: AppColor.primary,
         fontSize: 15.sp,
@@ -230,13 +230,13 @@ class _TrackOrdersPainter extends CustomPainter {
     textPainter.layout();
     textPainter.paint(canvas, Offset(cx - 8, cy + 18));
 
-    // 5. Yellow Coin with '$'
+    // 5. Yellow Coin with '₹'
     final coinCenter = Offset(cx + 50, cy + 50);
     canvas.drawCircle(coinCenter, 15.0, yellowFill);
     canvas.drawCircle(coinCenter, 15.0, blackStroke..strokeWidth = 2.5);
 
     textPainter.text = TextSpan(
-      text: '\$',
+      text: '₹',
       style: TextStyle(
         color: Colors.white,
         fontSize: 16.sp,

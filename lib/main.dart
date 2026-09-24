@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app/data/config/app_color.dart';
+import 'app/data/services/app_translations.dart';
 import 'app/routes/app_pages.dart';
 
 void main() {
@@ -17,6 +18,9 @@ void main() {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: "ALIF",
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          fallbackLocale: const Locale('en', 'US'),
           theme: ThemeData(
             useMaterial3: true,
             scaffoldBackgroundColor: AppColor.background,

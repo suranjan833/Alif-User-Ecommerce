@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/services/app_translations.dart';
 import '../../../routes/app_pages.dart';
 
 class AccountMenuItem {
@@ -34,116 +35,107 @@ class AccountController extends GetxController {
   final userPhone = '+91 98765 43210'.obs;
   final memberSince = 'Member since Jun-2026'.obs;
   final currentLanguage = 'English'.obs;
+  final currentLangCode = 'en'.obs;
 
   List<AccountSectionData> get sections => [
     AccountSectionData(
-      title: 'Manage',
+      title: 'manage'.tr,
       items: [
         AccountMenuItem(
-          title: 'My Profile',
+          title: 'my_profile'.tr,
           icon: Iconsax.user_edit,
-          onTap: () => openMyProfileSheet(),
+          onTap: () => openMyProfile(),
         ),
         AccountMenuItem(
-          title: 'My Orders',
+          title: 'my_orders'.tr,
           icon: Iconsax.shopping_bag,
-          onTap: () => onMenuItemTap('My Orders'),
+          onTap: () => openMyOrders(),
         ),
         AccountMenuItem(
-          title: 'Manage addresses',
+          title: 'manage_addresses'.tr,
           icon: Iconsax.location,
-          onTap: () => onMenuItemTap('Manage addresses'),
+          onTap: () => openManageAddresses(),
         ),
         AccountMenuItem(
-          title: 'My transactions',
+          title: 'my_transactions'.tr,
           icon: Iconsax.card,
-          onTap: () => onMenuItemTap('My transactions'),
+          onTap: () => Get.toNamed(Routes.MY_TRANSACTIONS),
         ),
         AccountMenuItem(
-          title: 'My Wishlist',
+          title: 'my_wishlist'.tr,
           icon: Iconsax.heart,
-          onTap: () => onMenuItemTap('My Wishlist'),
+          onTap: () => Get.toNamed(Routes.MY_WISHLIST),
         ),
         AccountMenuItem(
-          title: 'Wallet',
+          title: 'wallet'.tr,
           icon: Iconsax.wallet_2,
-          onTap: () => onMenuItemTap('Wallet'),
+          onTap: () => Get.toNamed(Routes.WALLET),
         ),
         AccountMenuItem(
-          title: 'Shopping List',
+          title: 'shopping_list'.tr,
           icon: Iconsax.clipboard_text,
-          onTap: () => onMenuItemTap('Shopping List'),
+          onTap: () => Get.toNamed(Routes.SHOPPING_LIST),
         ),
         AccountMenuItem(
-          title: 'Saved for later',
-          icon: Iconsax.bookmark,
-          onTap: () => onMenuItemTap('Saved for later'),
-        ),
-        AccountMenuItem(
-          title: 'Refer and Earn',
+          title: 'refer_and_earn'.tr,
           icon: Iconsax.profile_add,
-          onTap: () => onMenuItemTap('Refer and Earn'),
+          onTap: () => Get.toNamed(Routes.REFER_AND_EARN),
         ),
       ],
     ),
     AccountSectionData(
-      title: 'Settings',
+      title: 'settings'.tr,
       items: [
         AccountMenuItem(
-          title: 'Account settings',
+          title: 'account_settings'.tr,
           icon: Iconsax.user,
-          onTap: () => onMenuItemTap('Account settings'),
+          onTap: () => openMyProfile(),
         ),
         AccountMenuItem(
-          title: 'Notifications',
+          title: 'notifications'.tr,
           icon: Iconsax.notification,
-          onTap: () => onMenuItemTap('Notifications'),
+          onTap: () => Get.toNamed(Routes.NOTIFICATIONS),
         ),
         AccountMenuItem(
-          title: 'Support',
+          title: 'support'.tr,
           icon: Iconsax.message_question,
-          onTap: () => onMenuItemTap('Support'),
+          onTap: () => Get.toNamed(Routes.SUPPORT),
         ),
         AccountMenuItem(
-          title: 'Language',
-          subtitle: 'Current Language: ${currentLanguage.value}',
+          title: 'language'.tr,
+          subtitle: '${"language".tr}: ${currentLanguage.value}',
           icon: Iconsax.translate,
-          onTap: () => onMenuItemTap('Language'),
-        ),
-        AccountMenuItem(
-          title: 'Stores',
-          icon: Iconsax.shop,
-          onTap: () => onMenuItemTap('Stores'),
+          onTap: () => openLanguageSelectionSheet(),
         ),
       ],
     ),
     AccountSectionData(
-      title: 'Others',
+      title: 'others'.tr,
       items: [
         AccountMenuItem(
-          title: 'About us',
+          title: 'about_us'.tr,
           icon: Iconsax.info_circle,
-          onTap: () => onMenuItemTap('About us'),
+          onTap: () => Get.toNamed(Routes.ABOUT_US),
         ),
         AccountMenuItem(
-          title: 'Terms & Condition',
+          title: 'terms_and_conditions'.tr,
           icon: Iconsax.document_text,
-          onTap: () => onMenuItemTap('Terms & Condition'),
+          onTap: () => Get.toNamed(Routes.TERMS_AND_CONDITIONS),
         ),
         AccountMenuItem(
-          title: 'Privacy Policy',
+          title: 'privacy_policy'.tr,
           icon: Iconsax.lock,
-          onTap: () => onMenuItemTap('Privacy Policy'),
+          onTap: () => Get.toNamed(Routes.PRIVACY_POLICY),
         ),
         AccountMenuItem(
-          title: 'Refund Policy',
+          title: 'refund_policy'.tr,
           icon: Iconsax.refresh_circle,
-          onTap: () => onMenuItemTap('Refund Policy'),
+          onTap: () => Get.toNamed(Routes.REFUND_POLICY),
         ),
         AccountMenuItem(
-          title: 'Shipping Policy',
+          title: 'shipping_policy'.tr,
           icon: Iconsax.truck_fast,
-          onTap: () => onMenuItemTap('Shipping Policy'),
+          onTap: () => Get.toNamed(Routes.SHIPPING_POLICY),
         ),
       ],
     ),
@@ -151,6 +143,126 @@ class AccountController extends GetxController {
 
   void onMenuItemTap(String title) {
     // Menu item action handler
+  }
+
+  void openMyProfile() {
+    Get.toNamed(Routes.MY_PROFILE);
+  }
+
+  void openMyOrders() {
+    Get.toNamed(Routes.MY_ORDERS);
+  }
+
+  void openManageAddresses() {
+    Get.toNamed(Routes.MANAGE_ADDRESSES);
+  }
+
+  void openLanguageSelectionSheet() {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'select_language'.tr,
+              style: GoogleFonts.lato(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColor.textPrimary,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Obx(
+              () => Column(
+                children: [
+                  _buildLanguageOption(
+                    code: 'en',
+                    title: 'english'.tr,
+                    isSelected: currentLangCode.value == 'en',
+                    onTap: () {
+                      currentLangCode.value = 'en';
+                      currentLanguage.value = 'English';
+                      AppTranslations.changeLanguage('en');
+                      update();
+                      Get.back();
+                    },
+                  ),
+                  SizedBox(height: 10.h),
+                  _buildLanguageOption(
+                    code: 'bn',
+                    title: 'bangla'.tr,
+                    isSelected: currentLangCode.value == 'bn',
+                    onTap: () {
+                      currentLangCode.value = 'bn';
+                      currentLanguage.value = 'Bangla (বাংলা)';
+                      AppTranslations.changeLanguage('bn');
+                      update();
+                      Get.back();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption({
+    required String code,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFF7E6) : const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: isSelected ? AppColor.primary : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.lato(
+                fontSize: 15.sp,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? AppColor.primaryDark : AppColor.textPrimary,
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: AppColor.primaryDark, size: 20.r),
+          ],
+        ),
+      ),
+    );
   }
 
   void openMyProfileSheet() {

@@ -188,49 +188,52 @@ class CountryPickerDialog extends GetView<CountryPickerController> {
                     final country = list[index];
                     final isSelected = selectedCountry.code == country.code;
 
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8.w),
-                      onTap: () {
-                        onSelect(country);
-                        Get.back();
-                      },
-                      leading: Text(
-                        country.flag,
-                        style: TextStyle(fontSize: 22.sp),
-                      ),
-                      title: Text(
-                        country.name,
-                        style: GoogleFonts.lato(
-                          fontSize: 14.sp,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? AppColor.primary
-                              : AppColor.textPrimary,
+                    return Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8.w),
+                        onTap: () {
+                          onSelect(country);
+                          Get.back();
+                        },
+                        leading: Text(
+                          country.flag,
+                          style: TextStyle(fontSize: 22.sp),
                         ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            country.dialCode,
-                            style: GoogleFonts.lato(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColor.textSecondary,
-                            ),
+                        title: Text(
+                          country.name,
+                          style: GoogleFonts.lato(
+                            fontSize: 14.sp,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? AppColor.primary
+                                : AppColor.textPrimary,
                           ),
-                          if (isSelected) ...[
-                            SizedBox(width: 6.w),
-                            Icon(
-                              Icons.check_circle,
-                              color: AppColor.primary,
-                              size: 16.r,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              country.dialCode,
+                              style: GoogleFonts.lato(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                                color: AppColor.textSecondary,
+                              ),
                             ),
+                            if (isSelected) ...[
+                              SizedBox(width: 6.w),
+                              Icon(
+                                Icons.check_circle,
+                                color: AppColor.primary,
+                                size: 16.r,
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     );
                   },

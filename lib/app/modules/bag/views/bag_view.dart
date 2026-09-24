@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../controllers/bag_controller.dart';
@@ -11,42 +12,375 @@ class BagView extends GetView<BagController> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<BagController>()) {
+      Get.put(BagController());
+    }
+
     return Scaffold(
-      backgroundColor: AppColor.background,
+      backgroundColor: const Color(0xFFF4F5F7),
       appBar: AppBar(
-        backgroundColor: AppColor.background,
+        backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
         title: Text(
           'Shopping Bag',
           style: GoogleFonts.lato(
-            fontSize: 18.sp,
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
             color: AppColor.textPrimary,
           ),
         ),
+        centerTitle: false,
+        actions: [
+          Obx(
+            () => controller.cartItems.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Iconsax.trash,
+                      color: AppColor.error,
+                      size: 20.r,
+                    ),
+                    onPressed: () => controller.clearCart(),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.shopping_bag_rounded,
-              size: 48.r,
-              color: AppColor.primary,
+      body: Obx(() {
+        if (controller.cartItems.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80.r,
+                  height: 80.r,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF7E6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Iconsax.shopping_bag,
+                      size: 42.r,
+                      color: AppColor.primaryDark,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'Your Shopping Bag is Empty',
+                  style: GoogleFonts.lato(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  'Explore products and add them to your bag',
+                  style: GoogleFonts.lato(
+                    fontSize: 13.5.sp,
+                    color: AppColor.textSecondary,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 12.h),
-            Text(
-              'Your Shopping Bag is Empty',
-              style: GoogleFonts.lato(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textPrimary,
+          );
+        }
+
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Cart Items List
+                    ...List.generate(controller.cartItems.length, (index) {
+                      final item = controller.cartItems[index];
+                      return _buildCartItemCard(item, index);
+                    }),
+                    SizedBox(height: 12.h),
+
+                    // Order Price Summary Card
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16.r),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Order Summary',
+                            style: GoogleFonts.lato(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColor.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 12.h),
+                          _buildSummaryRow(
+                            'Subtotal',
+                            '₹${controller.subtotal.toStringAsFixed(2)}',
+                          ),
+                          SizedBox(height: 8.h),
+                          _buildSummaryRow(
+                            'Delivery Fee',
+                            controller.deliveryFee == 0
+                                ? 'FREE'
+                                : '₹${controller.deliveryFee.toStringAsFixed(2)}',
+                            isGreen: controller.deliveryFee == 0,
+                          ),
+                          SizedBox(height: 8.h),
+                          _buildSummaryRow(
+                            'Estimated Tax (5%)',
+                            '₹${controller.tax.toStringAsFixed(2)}',
+                          ),
+                          SizedBox(height: 10.h),
+                          const Divider(color: Color(0xFFF1F5F9), height: 1),
+                          SizedBox(height: 10.h),
+                          _buildSummaryRow(
+                            'Total Payable',
+                            '₹${controller.totalAmount.toStringAsFixed(2)}',
+                            isBold: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                  ],
+                ),
+              ),
+            ),
+
+            // Bottom Sticky Checkout Bar
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: const Color(0xFFE2E8F0), width: 1.w),
+                ),
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Amount',
+                          style: GoogleFonts.lato(
+                            fontSize: 12.sp,
+                            color: AppColor.textSecondary,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          '₹${controller.totalAmount.toStringAsFixed(2)}',
+                          style: GoogleFonts.lato(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColor.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    SizedBox(
+                      height: 48.h,
+                      child: ElevatedButton.icon(
+                        onPressed: () => controller.proceedToCheckout(),
+                        icon: Icon(
+                          Iconsax.card,
+                          size: 18.r,
+                          color: AppColor.textPrimary,
+                        ),
+                        label: Text(
+                          'Proceed to Checkout',
+                          style: GoogleFonts.lato(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColor.textPrimary,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColor.primary,
+                          elevation: 0,
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
-        ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildCartItemCard(Map<String, dynamic> item, int index) {
+    final price = item['price'] as double;
+    final qty = item['quantity'] as int;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: Row(
+        children: [
+          Container(
+            width: 70.r,
+            height: 70.r,
+            padding: EdgeInsets.all(6.r),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Image.network(
+              item['image'] as String,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Iconsax.image,
+                size: 28.r,
+                color: AppColor.textSecondary,
+              ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['brand'] as String,
+                  style: GoogleFonts.lato(
+                    fontSize: 11.5.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.primaryDark,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  item['title'] as String,
+                  style: GoogleFonts.lato(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  '₹${price.toStringAsFixed(2)}',
+                  style: GoogleFonts.lato(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColor.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Quantity Controls
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    qty == 1 ? Iconsax.trash : Icons.remove_rounded,
+                    size: 16.r,
+                    color: qty == 1 ? AppColor.error : AppColor.textPrimary,
+                  ),
+                  onPressed: () => controller.decrementQuantity(index),
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.all(6.r),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w),
+                  child: Text(
+                    '$qty',
+                    style: GoogleFonts.lato(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColor.textPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.add_rounded,
+                    size: 16.r,
+                    color: AppColor.textPrimary,
+                  ),
+                  onPressed: () => controller.incrementQuantity(index),
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.all(6.r),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    bool isGreen = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.lato(
+            fontSize: isBold ? 15.sp : 13.5.sp,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+            color: isBold ? AppColor.textPrimary : AppColor.textSecondary,
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.lato(
+            fontSize: isBold ? 17.sp : 14.sp,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+            color: isGreen
+                ? const Color(0xFF16A34A)
+                : (isBold ? AppColor.textPrimary : AppColor.textPrimary),
+          ),
+        ),
+      ],
     );
   }
 }

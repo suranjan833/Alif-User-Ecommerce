@@ -20,12 +20,16 @@ class AccountView extends GetView<AccountController> {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleSpacing: 20.w,
-        title: Text(
-          'My account',
-          style: GoogleFonts.lato(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColor.textPrimary,
+        title: Obx(
+          () => Text(
+            controller.currentLangCode.value == 'bn'
+                ? 'আমার অ্যাকাউন্ট'
+                : 'My account',
+            style: GoogleFonts.lato(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColor.textPrimary,
+            ),
           ),
         ),
       ),
@@ -43,7 +47,7 @@ class AccountView extends GetView<AccountController> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => controller.openMyProfileSheet(),
+                    onTap: () => controller.openMyProfile(),
                     borderRadius: BorderRadius.circular(16.r),
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -109,8 +113,12 @@ class AccountView extends GetView<AccountController> {
               ),
 
               // 2. Sections (Manage, Settings, Others)
-              ...controller.sections.map(
-                (section) => _buildSectionGroup(context, section),
+              Obx(
+                () => Column(
+                  children: controller.sections
+                      .map((section) => _buildSectionGroup(context, section))
+                      .toList(),
+                ),
               ),
 
               // 3. Logout Button Card
@@ -140,12 +148,16 @@ class AccountView extends GetView<AccountController> {
                             color: AppColor.error,
                           ),
                           SizedBox(width: 8.w),
-                          Text(
-                            'Logout',
-                            style: GoogleFonts.lato(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.bold,
-                              color: AppColor.error,
+                          Obx(
+                            () => Text(
+                              controller.currentLangCode.value == 'bn'
+                                  ? 'লগআউট'
+                                  : 'Logout',
+                              style: GoogleFonts.lato(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppColor.error,
+                              ),
                             ),
                           ),
                         ],

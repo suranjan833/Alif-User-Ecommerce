@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/typewriter_search_hint.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -107,9 +109,12 @@ class HomeView extends GetView<HomeController> {
                                   ),
                                   SizedBox(width: 12.w),
                                   Expanded(
-                                    child: Text(
-                                      controller.currentCategory['searchHint']
-                                          as String,
+                                    child: TypewriterSearchHintText(
+                                      hints: [
+                                        controller.currentCategory['searchHint']
+                                            as String,
+                                        ...controller.searchHints,
+                                      ],
                                       style: GoogleFonts.lato(
                                         fontSize: 14.sp,
                                         color: AppColor.textSecondary,
@@ -568,149 +573,153 @@ class HomeView extends GetView<HomeController> {
   Widget _buildProductCard(Map<String, dynamic> product, int index) {
     final isFav = product['isFavorite'] as bool? ?? false;
 
-    return Container(
-      width: 155.w,
-      margin: EdgeInsets.only(right: 14.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: EdgeInsets.all(10.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Favorite Button top right
-                Align(
-                  alignment: Alignment.topRight,
-                  child: GestureDetector(
-                    onTap: () => controller.toggleFavorite(index),
-                    child: Container(
-                      padding: EdgeInsets.all(6.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        isFav ? Iconsax.heart5 : Iconsax.heart,
-                        size: 16.r,
-                        color: isFav ? Colors.red : AppColor.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Product Image
-                Center(
-                  child: Image.network(
-                    product['image'] as String,
-                    height: 90.h,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 90.h,
-                      color: Colors.grey.shade100,
-                      child: Icon(
-                        Iconsax.image,
-                        size: 32.r,
-                        color: AppColor.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 10.h),
-
-                // Title
-                Text(
-                  product['title'] as String,
-                  style: GoogleFonts.lato(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColor.textPrimary,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                SizedBox(height: 4.h),
-
-                // Discount Badge
-                Text(
-                  product['discount'] as String,
-                  style: GoogleFonts.lato(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF15803D),
-                  ),
-                ),
-
-                SizedBox(height: 4.h),
-
-                // Price and Original Price
-                Row(
-                  children: [
-                    Text(
-                      product['price'] as String,
-                      style: GoogleFonts.lato(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w900,
-                        color: AppColor.textPrimary,
-                      ),
-                    ),
-                    SizedBox(width: 6.w),
-                    Text(
-                      product['originalPrice'] as String,
-                      style: GoogleFonts.lato(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w500,
-                        color: AppColor.textHint,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+    return GestureDetector(
+      onTap: () => Get.toNamed(Routes.PRODUCT_DETAILS, arguments: product),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 155.w,
+        margin: EdgeInsets.only(right: 14.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(10.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Favorite Button top right
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: GestureDetector(
+                      onTap: () => controller.toggleFavorite(index),
+                      child: Container(
+                        padding: EdgeInsets.all(6.w),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          isFav ? Iconsax.heart5 : Iconsax.heart,
+                          size: 16.r,
+                          color: isFav ? Colors.red : AppColor.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
 
-          // Plus Add Button bottom right
-          Positioned(
-            right: 10.w,
-            bottom: 10.h,
-            child: Container(
-              width: 32.w,
-              height: 32.h,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B),
-                borderRadius: BorderRadius.circular(10.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                  // Product Image
+                  Center(
+                    child: Image.network(
+                      product['image'] as String,
+                      height: 90.h,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 90.h,
+                        color: Colors.grey.shade100,
+                        child: Icon(
+                          Iconsax.image,
+                          size: 32.r,
+                          color: AppColor.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 10.h),
+
+                  // Title
+                  Text(
+                    product['title'] as String,
+                    style: GoogleFonts.lato(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColor.textPrimary,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  SizedBox(height: 4.h),
+
+                  // Discount Badge
+                  Text(
+                    product['discount'] as String,
+                    style: GoogleFonts.lato(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF15803D),
+                    ),
+                  ),
+
+                  SizedBox(height: 4.h),
+
+                  // Price and Original Price
+                  Row(
+                    children: [
+                      Text(
+                        product['price'] as String,
+                        style: GoogleFonts.lato(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                          color: AppColor.textPrimary,
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Text(
+                        product['originalPrice'] as String,
+                        style: GoogleFonts.lato(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w500,
+                          color: AppColor.textHint,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              child: Icon(Icons.add_rounded, color: Colors.white, size: 20.r),
             ),
-          ),
-        ],
+
+            // Plus Add Button bottom right
+            Positioned(
+              right: 10.w,
+              bottom: 10.h,
+              child: Container(
+                width: 32.w,
+                height: 32.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B),
+                  borderRadius: BorderRadius.circular(10.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.add_rounded, color: Colors.white, size: 20.r),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
