@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../controllers/account_controller.dart';
@@ -38,58 +39,120 @@ class AccountView extends GetView<AccountController> {
             children: [
               // 1. User Profile Card Header
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 54.r,
-                      height: 54.r,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0F172A),
-                        shape: BoxShape.circle,
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => controller.openMyProfileSheet(),
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.w,
+                        vertical: 6.h,
                       ),
-                      child: Center(
-                        child: Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 30.r,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 14.w),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Obx(
-                          () => Text(
-                            controller.userName.value,
-                            style: GoogleFonts.lato(
-                              fontSize: 20.sp,
-                              fontWeight: FontWeight.w800,
-                              color: AppColor.textPrimary,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 54.r,
+                            height: 54.r,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF0F172A),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 30.r,
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Obx(
-                          () => Text(
-                            controller.memberSince.value,
-                            style: GoogleFonts.lato(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w400,
-                              color: AppColor.textSecondary,
+                          SizedBox(width: 14.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Obx(
+                                  () => Text(
+                                    controller.userName.value,
+                                    style: GoogleFonts.lato(
+                                      fontSize: 20.sp,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColor.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 2.h),
+                                Obx(
+                                  () => Text(
+                                    controller.memberSince.value,
+                                    style: GoogleFonts.lato(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w400,
+                                      color: AppColor.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 24.r,
+                            color: const Color(0xFFA0A7B5),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ),
 
               // 2. Sections (Manage, Settings, Others)
               ...controller.sections.map(
                 (section) => _buildSectionGroup(context, section),
+              ),
+
+              // 3. Logout Button Card
+              Padding(
+                padding: EdgeInsets.only(left: 16.w, right: 16.w, top: 20.h),
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16.r),
+                  child: InkWell(
+                    onTap: () => controller.logout(),
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(
+                          color: AppColor.error.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Iconsax.logout,
+                            size: 20.r,
+                            color: AppColor.error,
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            'Logout',
+                            style: GoogleFonts.lato(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColor.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
