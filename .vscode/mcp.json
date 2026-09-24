@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "android": {
+      "command": "npx",
+      "args": ["scrcpy-mcp"]
+    }
+  }
+}
