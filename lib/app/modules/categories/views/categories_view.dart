@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/categories_controller.dart';
 
 class CategoriesView extends GetView<CategoriesController> {
@@ -79,74 +80,79 @@ class CategoriesView extends GetView<CategoriesController> {
   }
 
   Widget _buildCategoryCard(Map<String, dynamic> item) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF1F5),
-        borderRadius: BorderRadius.circular(18.r),
-      ),
-      child: Stack(
-        children: [
-          // Category Image on Right
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 85.w,
-            child: ClipRRect(
-              borderRadius: BorderRadius.horizontal(
-                right: Radius.circular(18.r),
-              ),
-              child: Image.network(
-                item['image'] as String,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade300,
-                  child: Icon(
-                    Iconsax.image,
-                    size: 24.r,
-                    color: AppColor.textSecondary,
+    return GestureDetector(
+      onTap: () {
+        Get.toNamed(Routes.CATEGORY_PRODUCTS, arguments: item);
+      },
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF1F5),
+          borderRadius: BorderRadius.circular(18.r),
+        ),
+        child: Stack(
+          children: [
+            // Category Image on Right
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 85.w,
+              child: ClipRRect(
+                borderRadius: BorderRadius.horizontal(
+                  right: Radius.circular(18.r),
+                ),
+                child: Image.network(
+                  item['image'] as String,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey.shade300,
+                    child: Icon(
+                      Iconsax.image,
+                      size: 24.r,
+                      color: AppColor.textSecondary,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // Gradient transition overlay to blend image smoothly with card background
-          Positioned(
-            right: 50.w,
-            top: 0,
-            bottom: 0,
-            width: 40.w,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFFEFF1F5), Colors.transparent],
+            // Gradient transition overlay to blend image smoothly with card background
+            Positioned(
+              right: 50.w,
+              top: 0,
+              bottom: 0,
+              width: 40.w,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [Color(0xFFEFF1F5), Colors.transparent],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Category Name on Left (Clean word wrapping)
-          Positioned(
-            left: 14.w,
-            top: 14.h,
-            right: 72.w,
-            child: Text(
-              item['name'] as String,
-              style: GoogleFonts.inter(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColor.textPrimary,
-                height: 1.25,
+            // Category Name on Left (Clean word wrapping)
+            Positioned(
+              left: 14.w,
+              top: 14.h,
+              right: 72.w,
+              child: Text(
+                item['name'] as String,
+                style: GoogleFonts.inter(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColor.textPrimary,
+                  height: 1.25,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

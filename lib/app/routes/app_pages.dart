@@ -6,6 +6,8 @@ import '../modules/account/bindings/account_binding.dart';
 import '../modules/account/views/account_view.dart';
 import '../modules/bag/bindings/bag_binding.dart';
 import '../modules/bag/views/bag_view.dart';
+import '../modules/categories/bindings/category_products_binding.dart';
+import '../modules/categories/views/category_products_view.dart';
 import '../modules/categories/bindings/categories_binding.dart';
 import '../modules/categories/views/categories_view.dart';
 import '../modules/discover/bindings/discover_binding.dart';
@@ -90,6 +92,12 @@ class AppPages {
       page: () => const AccountView(),
       binding: AccountBinding(),
       transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: _Paths.CATEGORY_PRODUCTS,
+      page: () => const CategoryProductsView(),
+      binding: CategoryProductsBinding(),
+      transition: Transition.rightToLeft,
     ),
   ];
 }
