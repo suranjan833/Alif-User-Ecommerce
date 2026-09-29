@@ -54,7 +54,11 @@ class CheckoutView extends GetView<CheckoutController> {
                   ),
                   SizedBox(height: 8.h),
                   Obx(
-                    () => Column(
+                    () => RadioGroup<int>(
+                      groupValue: controller.selectedAddressIndex.value,
+                      onChanged: (val) =>
+                          controller.selectAddress(val ?? 0),
+                      child: Column(
                       children: List.generate(controller.addresses.length, (
                         index,
                       ) {
@@ -79,11 +83,8 @@ class CheckoutView extends GetView<CheckoutController> {
                               ),
                               child: RadioListTile<int>(
                                 value: index,
-                                groupValue:
-                                    controller.selectedAddressIndex.value,
                                 activeColor: AppColor.primaryDark,
-                                onChanged: (val) =>
-                                    controller.selectAddress(val ?? 0),
+                                toggleable: false,
                                 title: Row(
                                   children: [
                                     Text(
@@ -120,6 +121,7 @@ class CheckoutView extends GetView<CheckoutController> {
                           ),
                         );
                       }),
+                      ),
                     ),
                   ),
                   SizedBox(height: 14.h),
@@ -331,7 +333,11 @@ class CheckoutView extends GetView<CheckoutController> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16.r),
                       ),
-                      child: Column(
+                      child: RadioGroup<String>(
+                        groupValue: controller.selectedPaymentMethod.value,
+                        onChanged: (val) =>
+                            controller.selectPaymentMethod(val ?? 'Razorpay'),
+                        child: Column(
                         children: [
                           // Razorpay Online Radio Option
                           _buildPaymentMethodTile(
@@ -371,6 +377,7 @@ class CheckoutView extends GetView<CheckoutController> {
                             ),
                           ),
                         ],
+                        ),
                       ),
                     ),
                   ),
@@ -572,9 +579,7 @@ class CheckoutView extends GetView<CheckoutController> {
           children: [
             Radio<String>(
               value: id,
-              groupValue: controller.selectedPaymentMethod.value,
               activeColor: const Color(0xFF0284C7),
-              onChanged: (val) => controller.selectPaymentMethod(val!),
             ),
             iconWidget,
             SizedBox(width: 12.w),

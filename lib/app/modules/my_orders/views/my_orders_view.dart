@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/my_orders_controller.dart';
 
 class MyOrdersView extends GetView<MyOrdersController> {
@@ -36,7 +37,13 @@ class MyOrdersView extends GetView<MyOrdersController> {
         ),
         centerTitle: false,
       ),
-      body: Column(
+      body: Obx(
+        () => controller.isLoading.value
+            ? Padding(
+                padding: EdgeInsets.only(top: 12.h),
+                child: const SkeletonList(itemCount: 4),
+              )
+            : Column(
         children: [
           // Filter Tabs
           Container(
@@ -100,6 +107,7 @@ class MyOrdersView extends GetView<MyOrdersController> {
           ),
         ],
       ),
+        ),
     );
   }
 

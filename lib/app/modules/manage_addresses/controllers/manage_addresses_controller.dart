@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 
 class AddressModel {
   final String id;
@@ -29,7 +30,8 @@ class AddressModel {
   });
 }
 
-class ManageAddressesController extends GetxController {
+class ManageAddressesController extends GetxController
+    with SkeletonLoadingMixin {
   final addresses = <AddressModel>[
     AddressModel(
       id: 'addr_1',
@@ -54,6 +56,12 @@ class ManageAddressesController extends GetxController {
       isDefault: false,
     ),
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 
   void setDefaultAddress(String addressId) {
     for (var addr in addresses) {

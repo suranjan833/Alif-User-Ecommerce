@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 import '../../../data/services/app_translations.dart';
 import '../../../routes/app_pages.dart';
 
@@ -29,13 +30,22 @@ class AccountSectionData {
   AccountSectionData({required this.title, required this.items});
 }
 
-class AccountController extends GetxController {
+class AccountController extends GetxController with SkeletonLoadingMixin {
   final userName = 'User'.obs;
   final userEmail = 'user@example.com'.obs;
   final userPhone = '+91 98765 43210'.obs;
   final memberSince = 'Member since Jun-2026'.obs;
   final currentLanguage = 'English'.obs;
   final currentLangCode = 'en'.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Defer so the shimmer is visible when the tab is first opened.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initSkeletonLoading();
+    });
+  }
 
   List<AccountSectionData> get sections => [
     AccountSectionData(

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 class CategoryProductsController extends GetxController {
   final categoryName = 'Electronics'.obs;
   final categoryImage = ''.obs;
-  final itemCount = 41.obs;
 
   final selectedSubCategoryIndex = 0.obs;
   final wishlistedProductIds = <String>{}.obs;
@@ -110,6 +109,12 @@ class CategoryProductsController extends GetxController {
     },
   ].obs;
 
+  /// Whether the initial load has finished. While false, the shimmer
+  /// skeleton is shown instead of the sidebar + product grid.
+  final isLoading = true.obs;
+
+  bool _hasLoadedOnce = false;
+
   @override
   void onInit() {
     super.onInit();
@@ -125,7 +130,25 @@ class CategoryProductsController extends GetxController {
     if (categoryImage.isEmpty) {
       categoryImage.value = 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=400&auto=format&fit=crop';
     }
+    // Simulated fetch so the shimmer skeleton is visible on first open.
+    _loadProducts();
   }
+
+  Future<void> _loadProducts() async {
+    // TODO: replace with a real API call when the backend is wired up.
+    await Future.delayed(const Duration(milliseconds: 900));
+    isLoading.value = false;
+    _hasLoadedOnce = true;
+  }
+
+  /// Re-runs the skeleton briefly on pull-to-refresh.
+  Future<void> refreshProducts() async {
+    if (isLoading.value) return;
+    isLoading.value = true;
+    await _loadProducts();
+  }
+
+  bool get hasLoadedOnce => _hasLoadedOnce;
 
   List<Map<String, dynamic>> get filteredProducts {
     if (selectedSubCategoryIndex.value == 0) {
@@ -134,6 +157,12 @@ class CategoryProductsController extends GetxController {
     final selectedId = subCategories[selectedSubCategoryIndex.value]['id'];
     return allProducts.where((p) => p['subCategoryId'] == selectedId).toList();
   }
+
+  /// Live count of products visible under the current sub-category selection.
+  int get visibleItemCount => filteredProducts.length;
+
+  /// Total products across the whole category (shown in the header).
+  int get totalItemCount => allProducts.length;
 
   void selectSubCategory(int index) {
     selectedSubCategoryIndex.value = index;

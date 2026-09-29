@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 
-class MyWishlistController extends GetxController {
+class MyWishlistController extends GetxController
+    with SkeletonLoadingMixin {
   final wishlistItems = <Map<String, dynamic>>[
     {
       'id': 'w1',
@@ -30,6 +32,12 @@ class MyWishlistController extends GetxController {
       'image': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=400&auto=format&fit=crop',
     },
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 
   void removeItem(String id) {
     wishlistItems.removeWhere((item) => item['id'] == id);

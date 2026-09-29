@@ -1,6 +1,10 @@
+
 import 'package:get/get.dart';
 
-class MyOrdersController extends GetxController {
+import '../../../data/mixins/skeleton_loading_mixin.dart';
+
+class MyOrdersController extends GetxController
+    with SkeletonLoadingMixin {
   final selectedStatusIndex = 0.obs;
 
   final statuses = const ['All', 'In Progress', 'Delivered', 'Cancelled'];
@@ -73,6 +77,12 @@ class MyOrdersController extends GetxController {
       ],
     },
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 
   List<Map<String, dynamic>> get filteredOrders {
     if (selectedStatusIndex.value == 0) {

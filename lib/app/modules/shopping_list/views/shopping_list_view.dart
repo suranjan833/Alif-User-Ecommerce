@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/shopping_list_controller.dart';
 
 class ShoppingListView extends GetView<ShoppingListController> {
@@ -38,7 +39,13 @@ class ShoppingListView extends GetView<ShoppingListController> {
         ),
         centerTitle: false,
       ),
-      body: Column(
+      body: Obx(
+        () => controller.isLoading.value
+            ? Padding(
+                padding: EdgeInsets.only(top: 12.h),
+                child: const SkeletonList(itemCount: 4),
+              )
+            : Column(
         children: [
           // Input row
           Container(
@@ -138,6 +145,7 @@ class ShoppingListView extends GetView<ShoppingListController> {
           ),
         ],
       ),
+        ),
     );
   }
 }

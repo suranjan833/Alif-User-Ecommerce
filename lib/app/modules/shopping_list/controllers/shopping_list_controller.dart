@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 
 class ShoppingListItem {
   final String id;
@@ -15,13 +16,20 @@ class ShoppingListItem {
   });
 }
 
-class ShoppingListController extends GetxController {
+class ShoppingListController extends GetxController
+    with SkeletonLoadingMixin {
   final items = <ShoppingListItem>[
     ShoppingListItem(id: '1', title: 'Milk & Bread', isCompleted: true),
     ShoppingListItem(id: '2', title: 'Smart LED Bulb 2-Pack'),
     ShoppingListItem(id: '3', title: 'Gaming Mouse Pad'),
     ShoppingListItem(id: '4', title: 'Organic Olive Oil'),
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 
   void toggleItem(int index) {
     items[index].isCompleted = !items[index].isCompleted;

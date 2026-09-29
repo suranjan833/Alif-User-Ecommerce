@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/notifications_controller.dart';
 
 class NotificationsView extends GetView<NotificationsController> {
@@ -43,6 +44,9 @@ class NotificationsView extends GetView<NotificationsController> {
         centerTitle: false,
       ),
       body: Obx(() {
+        if (controller.isLoading.value) {
+          return const SkeletonList(itemCount: 4);
+        }
         if (controller.notificationsList.isEmpty) {
           return Center(
             child: Text(

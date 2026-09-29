@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/discover_controller.dart';
 
 class DiscoverView extends GetView<DiscoverController> {
@@ -19,8 +20,11 @@ class DiscoverView extends GetView<DiscoverController> {
     return Scaffold(
       backgroundColor: AppColor.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+        child: Obx(
+          () => controller.isLoading.value
+              ? const SkeletonHome()
+              : SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -47,7 +51,7 @@ class DiscoverView extends GetView<DiscoverController> {
                 ),
               ),
 
-              // 2. Top Sellers Horizontal Stories Bar
+              // 2. Categories Horizontal Bar (replaces old seller stories)
               Obx(
                 () => SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -55,9 +59,16 @@ class DiscoverView extends GetView<DiscoverController> {
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: List.generate(
-                      controller.sellers.length,
-                      (index) =>
-                          _buildSellerStoryItem(controller.sellers[index]),
+                      controller.discoverCategories.length,
+                      (index) => Padding(
+                        padding: EdgeInsets.only(right: 12.w),
+                        child: _buildCategoryChip(
+                          controller.discoverCategories[index],
+                          isSelected:
+                              controller.selectedCategoryIndex.value == index,
+                          onTap: () => controller.selectCategory(index),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -111,49 +122,59 @@ class DiscoverView extends GetView<DiscoverController> {
           ),
         ),
       ),
+      ),
     );
   }
 
-  Widget _buildSellerStoryItem(Map<String, dynamic> seller) {
-    return Container(
-      margin: EdgeInsets.only(right: 16.w),
+  /// Horizontal category chip: circular image + label, highlighted when
+  /// selected.
+  Widget _buildCategoryChip(
+    Map<String, dynamic> category, {
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final accent = category['accent'] as Color? ?? const Color(0xFFF6F7F9);
+
+    return GestureDetector(
+      onTap: onTap,
       child: Column(
         children: [
-          // Gradient Ring Container
           Container(
-            padding: EdgeInsets.all(2.5.w),
-            decoration: const BoxDecoration(
+            width: 56.r,
+            height: 56.r,
+            padding: EdgeInsets.all(3.r),
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFFA8C16),
-                  Color(0xFFF5222D),
-                  Color(0xFF722ED1),
-                ],
+              color: accent,
+              border: Border.all(
+                color: isSelected ? AppColor.primary : Colors.transparent,
+                width: 2.r,
               ),
             ),
-            child: Container(
-              padding: EdgeInsets.all(2.w),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: CircleAvatar(
-                radius: 28.r,
-                backgroundImage: NetworkImage(seller['avatar'] as String),
-                backgroundColor: Colors.grey.shade200,
+            child: ClipOval(
+              child: Image.network(
+                category['image'] as String,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade300,
+                  child: Icon(
+                    Iconsax.image,
+                    size: 18.r,
+                    color: AppColor.textSecondary,
+                  ),
+                ),
               ),
             ),
           ),
           SizedBox(height: 6.h),
           Text(
-            seller['username'] as String,
+            category['name'] as String,
             style: GoogleFonts.lato(
               fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColor.textPrimary,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? AppColor.textPrimary
+                  : AppColor.textSecondary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

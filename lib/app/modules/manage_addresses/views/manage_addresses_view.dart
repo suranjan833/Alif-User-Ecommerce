@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/manage_addresses_controller.dart';
 
 class ManageAddressesView extends GetView<ManageAddressesController> {
@@ -36,7 +37,13 @@ class ManageAddressesView extends GetView<ManageAddressesController> {
         ),
         centerTitle: false,
       ),
-      body: Column(
+      body: Obx(
+        () => controller.isLoading.value
+            ? Padding(
+                padding: EdgeInsets.only(top: 12.h),
+                child: const SkeletonList(itemCount: 3),
+              )
+            : Column(
         children: [
           // Add New Address Top Card
           Padding(
@@ -123,6 +130,7 @@ class ManageAddressesView extends GetView<ManageAddressesController> {
           ),
         ],
       ),
+        ),
     );
   }
 

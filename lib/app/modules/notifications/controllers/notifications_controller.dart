@@ -1,6 +1,10 @@
+
 import 'package:get/get.dart';
 
-class NotificationsController extends GetxController {
+import '../../../data/mixins/skeleton_loading_mixin.dart';
+
+class NotificationsController extends GetxController
+    with SkeletonLoadingMixin {
   final notificationsList = <Map<String, dynamic>>[
     {
       'title': 'Order Dispatched! 🚚',
@@ -22,6 +26,12 @@ class NotificationsController extends GetxController {
       'isRead': true,
     },
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 
   void markAllAsRead() {
     for (var n in notificationsList) {

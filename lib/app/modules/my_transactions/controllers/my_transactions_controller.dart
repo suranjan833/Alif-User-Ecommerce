@@ -1,6 +1,10 @@
+
 import 'package:get/get.dart';
 
-class MyTransactionsController extends GetxController {
+import '../../../data/mixins/skeleton_loading_mixin.dart';
+
+class MyTransactionsController extends GetxController
+    with SkeletonLoadingMixin {
   final transactions = <Map<String, dynamic>>[
     {
       'title': 'Order Payment #ALF-98742',
@@ -35,4 +39,10 @@ class MyTransactionsController extends GetxController {
       'status': 'Success',
     },
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 }

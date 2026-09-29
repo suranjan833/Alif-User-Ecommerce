@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class HomeController extends GetxController {
+import '../../../data/mixins/skeleton_loading_mixin.dart';
+
+class HomeController extends GetxController with SkeletonLoadingMixin {
   final currentIndex = 0.obs;
   final selectedCategoryIndex = 0.obs;
   final currentBannerIndex = 0.obs;
   final currentLocation = 'Bakali coloni, Vijay Nagar, Bhuj, Gujar...'.obs;
   final isFetchingLocation = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Defer so the shimmer is visible when the tab is first opened.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initSkeletonLoading();
+    });
+  }
 
   final searchHints = const [
     'Search "Sofa Sets"',

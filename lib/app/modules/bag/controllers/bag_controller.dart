@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 import '../../../routes/app_pages.dart';
 
-class BagController extends GetxController {
+class BagController extends GetxController with SkeletonLoadingMixin {
   final cartItems = <Map<String, dynamic>>[
     {
       'id': 'c1',
@@ -23,6 +24,15 @@ class BagController extends GetxController {
       'image': 'https://images.unsplash.com/photo-1550525811-e5869dd03032?q=80&w=400&auto=format&fit=crop',
     },
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // Defer so the shimmer is visible when the tab is first opened.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initSkeletonLoading();
+    });
+  }
 
   double get subtotal {
     double total = 0;

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/my_transactions_controller.dart';
 
 class MyTransactionsView extends GetView<MyTransactionsController> {
@@ -36,6 +37,9 @@ class MyTransactionsView extends GetView<MyTransactionsController> {
         centerTitle: false,
       ),
       body: Obx(() {
+        if (controller.isLoading.value) {
+          return const SkeletonList(itemCount: 5);
+        }
         if (controller.transactions.isEmpty) {
           return Center(
             child: Text(

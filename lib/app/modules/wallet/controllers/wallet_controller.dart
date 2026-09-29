@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 
-class WalletController extends GetxController {
+class WalletController extends GetxController with SkeletonLoadingMixin {
   final balance = 1899.00.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 
   void addMoney(double amount) {
     balance.value += amount;

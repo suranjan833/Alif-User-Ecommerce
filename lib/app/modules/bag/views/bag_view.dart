@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/bag_controller.dart';
 
 class BagView extends GetView<BagController> {
@@ -47,6 +48,9 @@ class BagView extends GetView<BagController> {
         ],
       ),
       body: Obx(() {
+        if (controller.isLoading.value) {
+          return const SkeletonCart();
+        }
         if (controller.cartItems.isEmpty) {
           return Center(
             child: Column(

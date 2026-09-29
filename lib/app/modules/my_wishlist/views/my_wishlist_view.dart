@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/my_wishlist_controller.dart';
 
@@ -38,6 +39,9 @@ class MyWishlistView extends GetView<MyWishlistController> {
         centerTitle: false,
       ),
       body: Obx(() {
+        if (controller.isLoading.value) {
+          return const SkeletonCardGrid(itemCount: 4, aspectRatio: 0.62);
+        }
         if (controller.wishlistItems.isEmpty) {
           return Center(
             child: Column(

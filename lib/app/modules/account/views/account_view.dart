@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/account_controller.dart';
 
 class AccountView extends GetView<AccountController> {
@@ -33,9 +34,12 @@ class AccountView extends GetView<AccountController> {
           ),
         ),
       ),
-      body: Container(
-        color: const Color(0xFFF4F5F7),
-        child: SingleChildScrollView(
+      body: Obx(
+        () => controller.isLoading.value
+            ? const SkeletonProfile()
+            : Container(
+                color: const Color(0xFFF4F5F7),
+                child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: EdgeInsets.only(bottom: 30.h),
           child: Column(
@@ -170,6 +174,7 @@ class AccountView extends GetView<AccountController> {
           ),
         ),
       ),
+        ),
     );
   }
 

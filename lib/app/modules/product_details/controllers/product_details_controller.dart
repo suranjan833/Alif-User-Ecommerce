@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 import '../../../routes/app_pages.dart';
 
 import '../../bag/controllers/bag_controller.dart';
 
-class ProductDetailsController extends GetxController {
+class ProductDetailsController extends GetxController
+    with SkeletonLoadingMixin {
   final product = <String, dynamic>{}.obs;
   final isWishlisted = false.obs;
   final selectedQuantity = 1.obs;

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/mixins/skeleton_loading_mixin.dart';
 
-class SupportController extends GetxController {
+class SupportController extends GetxController with SkeletonLoadingMixin {
   final supportPhone = '+91 1800 123 4567'.obs;
   final supportEmail = 'support@alif.com'.obs;
 
@@ -21,6 +22,12 @@ class SupportController extends GetxController {
       'answer': 'You can call our toll-free number or email us directly from the buttons above.',
     },
   ].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    initSkeletonLoading();
+  }
 
   void openLiveChat() {
     Get.snackbar(

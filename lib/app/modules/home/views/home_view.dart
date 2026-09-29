@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/skeleton_box.dart';
 import '../../../data/widgets/typewriter_search_hint.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/home_controller.dart';
@@ -17,10 +18,18 @@ class HomeView extends GetView<HomeController> {
     return Obx(
       () => Scaffold(
         backgroundColor: controller.currentCategory['bgColor'] as Color,
-        body: SafeArea(
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
+        body: controller.isLoading.value
+            ? const SafeArea(child: SkeletonHome())
+            : SafeArea(
+          child: RefreshIndicator(
+            color: AppColor.primary,
+            backgroundColor: Colors.white,
+            onRefresh: controller.refreshData,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              slivers: [
               // 1. Location Header (scrolls away)
               SliverToBoxAdapter(
                 child: GestureDetector(
@@ -514,6 +523,7 @@ class HomeView extends GetView<HomeController> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
