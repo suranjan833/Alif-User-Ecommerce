@@ -10,10 +10,19 @@ import '../../bag/views/bag_view.dart';
 import '../../categories/views/categories_view.dart';
 import '../../discover/views/discover_view.dart';
 import '../../home/views/home_view.dart';
+import '../bindings/main_navigation_binding.dart';
 import '../controllers/main_navigation_controller.dart';
 
 class MainNavigationView extends GetView<MainNavigationController> {
   const MainNavigationView({super.key});
+
+  @override
+  MainNavigationController get controller {
+    if (!Get.isRegistered<MainNavigationController>()) {
+      MainNavigationBinding().dependencies();
+    }
+    return Get.find<MainNavigationController>();
+  }
 
   static const List<Widget> _views = [
     HomeView(),

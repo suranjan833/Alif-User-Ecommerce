@@ -10,11 +10,17 @@ import '../controllers/main_navigation_controller.dart';
 class MainNavigationBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<MainNavigationController>(() => MainNavigationController());
-    Get.lazyPut<HomeController>(() => HomeController());
-    Get.lazyPut<CategoriesController>(() => CategoriesController());
-    Get.lazyPut<DiscoverController>(() => DiscoverController());
-    Get.lazyPut<BagController>(() => BagController());
-    Get.lazyPut<AccountController>(() => AccountController());
+    Get.lazyPut<MainNavigationController>(
+      () => MainNavigationController(),
+      fenix: true,
+    );
+    Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
+    Get.lazyPut<CategoriesController>(
+      () => CategoriesController(),
+      fenix: true,
+    );
+    Get.lazyPut<DiscoverController>(() => DiscoverController(), fenix: true);
+    Get.lazyPut<BagController>(() => BagController(), fenix: true);
+    Get.lazyPut<AccountController>(() => AccountController(), fenix: true);
   }
 }
