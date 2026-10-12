@@ -1,4 +1,4 @@
-// ignore_for_file: library_prefixes
+﻿// ignore_for_file: library_prefixes
 
 import 'dart:convert';
 import 'dart:developer';
@@ -7,17 +7,20 @@ import 'package:dio/dio.dart' as DIO;
 
 import 'app_config.dart';
 
-Future<DIO.Response<dynamic>> dioGet(String endUrl) async {
-  var dio = DIO.Dio();
+Map<String, String> _getHeaders() {
   final token = getBox.read(USER_TOKEN) ?? '';
-  dio.options.headers = {
+  return {
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0',
-    'authtoken': token,
-    'Authorization': 'Bearer $token',
+    if (token.toString().isNotEmpty) 'authtoken': token.toString(),
+    if (token.toString().isNotEmpty) 'Authorization': 'Bearer $token',
   };
+}
 
+Future<DIO.Response<dynamic>> dioGet(String endUrl) async {
+  var dio = DIO.Dio();
+  dio.options.headers = _getHeaders();
   var finalUrl = "$BASE_URL$endUrl";
 
   try {
@@ -29,14 +32,11 @@ Future<DIO.Response<dynamic>> dioGet(String endUrl) async {
         receiveTimeout: const Duration(seconds: 30),
       ),
     );
-    isDebugMode.value
-        ? log(
-            "\n\nGET: $finalUrl\nHEADERS:\n${jsonEncode({"Authorization": getBox.read(USER_TOKEN)})}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n",
-          )
-        : null;
+    if (isDebugMode.value) {
+      log("\n\nGET: $finalUrl\nHEADERS:\n${jsonEncode(_getHeaders())}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n");
+    }
     return response;
   } catch (e) {
-    // showMessage(message: "Something went wrong", isSuccess: false);
     return DIO.Response(
       requestOptions: DIO.RequestOptions(path: endUrl),
       statusCode: 500,
@@ -48,17 +48,7 @@ Future<DIO.Response<dynamic>> dioGet(String endUrl) async {
 
 Future<DIO.Response<dynamic>> dioDelete(String endUrl) async {
   var dio = DIO.Dio();
-  dio.options.headers = {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-  };
-  dio.options.headers["Authorization"] =
-      // ignore: prefer_interpolation_to_compose_strings
-      "Bearer "
-          '"' +
-      getBox.read(USER_TOKEN) +
-      '"';
+  dio.options.headers = _getHeaders();
   var finalUrl = "$BASE_URL$endUrl";
 
   try {
@@ -70,14 +60,11 @@ Future<DIO.Response<dynamic>> dioDelete(String endUrl) async {
         receiveTimeout: const Duration(seconds: 30),
       ),
     );
-    isDebugMode.value
-        ? log(
-            "\n\nDELETE: $finalUrl\nHEADERS:\n${jsonEncode({"authtoken": getBox.read(USER_TOKEN)})}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n",
-          )
-        : null;
+    if (isDebugMode.value) {
+      log("\n\nDELETE: $finalUrl\nHEADERS:\n${jsonEncode(_getHeaders())}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n");
+    }
     return response;
   } catch (e) {
-    // showMessage(message: "Something went wrong", isSuccess: false);
     return DIO.Response(
       requestOptions: DIO.RequestOptions(path: endUrl),
       statusCode: 500,
@@ -93,20 +80,16 @@ Future<DIO.Response<dynamic>> dioPost({
   bool? isFile,
   bool isJson = false,
 }) async {
-  var finalUrl = "$BASE_URL$endUrl";
+  var finalUrl = "$BASE_URL${endUrl ?? ''}";
   var dio = DIO.Dio();
-  final token = getBox.read(USER_TOKEN) ?? '';
-  dio.options.headers = {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'authtoken': token,
-    'Authorization': 'Bearer $token',
-  };
+  dio.options.headers = _getHeaders();
+  if (isJson) {
+    dio.options.headers['Content-Type'] = 'application/json';
+  }
   try {
     var response = await dio.post(
       finalUrl,
-      data: isJson ? (data ?? {}) : DIO.FormData.fromMap(data!),
+      data: isJson ? (data ?? {}) : (data != null ? DIO.FormData.fromMap(data) : null),
       options: DIO.Options(
         validateStatus: (status) => true,
         sendTimeout: const Duration(seconds: 30),
@@ -114,15 +97,86 @@ Future<DIO.Response<dynamic>> dioPost({
         contentType: isJson ? DIO.Headers.jsonContentType : null,
       ),
     );
-    isDebugMode.value
-        ? log(
-            "\n\nPOST: $finalUrl\nHEADERS:\n${jsonEncode({"authtoken": getBox.read(USER_TOKEN)})}\n${(isFile ?? false) ? '' : 'BODY:${jsonEncode(data)}'}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n",
-          )
-        : null;
+    if (isDebugMode.value) {
+      log("\n\nPOST: $finalUrl\nHEADERS:\n${jsonEncode(_getHeaders())}\n${(isFile ?? false) ? '' : 'BODY:${jsonEncode(data)}'}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n");
+    }
     return response;
   } catch (e) {
     log(e.toString());
-    // showMessage(message: "Something went wrong", isSuccess: false);
+    return DIO.Response(
+      requestOptions: DIO.RequestOptions(path: endUrl ?? ""),
+      statusCode: 500,
+      statusMessage: "Something went wrong",
+      data: {"message": "Something went wrong"},
+    );
+  }
+}
+
+Future<DIO.Response<dynamic>> dioPut({
+  Map<String, dynamic>? data,
+  String? endUrl,
+  bool isJson = true,
+}) async {
+  var finalUrl = "$BASE_URL${endUrl ?? ''}";
+  var dio = DIO.Dio();
+  dio.options.headers = _getHeaders();
+  if (isJson) {
+    dio.options.headers['Content-Type'] = 'application/json';
+  }
+  try {
+    var response = await dio.put(
+      finalUrl,
+      data: isJson ? (data ?? {}) : (data != null ? DIO.FormData.fromMap(data) : null),
+      options: DIO.Options(
+        validateStatus: (status) => true,
+        sendTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        contentType: isJson ? DIO.Headers.jsonContentType : null,
+      ),
+    );
+    if (isDebugMode.value) {
+      log("\n\nPUT: $finalUrl\nHEADERS:\n${jsonEncode(_getHeaders())}\nBODY:${jsonEncode(data)}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n");
+    }
+    return response;
+  } catch (e) {
+    log(e.toString());
+    return DIO.Response(
+      requestOptions: DIO.RequestOptions(path: endUrl ?? ""),
+      statusCode: 500,
+      statusMessage: "Something went wrong",
+      data: {"message": "Something went wrong"},
+    );
+  }
+}
+
+Future<DIO.Response<dynamic>> dioPatch({
+  Map<String, dynamic>? data,
+  String? endUrl,
+  bool isJson = true,
+}) async {
+  var finalUrl = "$BASE_URL${endUrl ?? ''}";
+  var dio = DIO.Dio();
+  dio.options.headers = _getHeaders();
+  if (isJson) {
+    dio.options.headers['Content-Type'] = 'application/json';
+  }
+  try {
+    var response = await dio.patch(
+      finalUrl,
+      data: isJson ? (data ?? {}) : (data != null ? DIO.FormData.fromMap(data) : null),
+      options: DIO.Options(
+        validateStatus: (status) => true,
+        sendTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+        contentType: isJson ? DIO.Headers.jsonContentType : null,
+      ),
+    );
+    if (isDebugMode.value) {
+      log("\n\nPATCH: $finalUrl\nHEADERS:\n${jsonEncode(_getHeaders())}\nBODY:${jsonEncode(data)}\nSTATUS CODE: ${response.statusCode}\n${jsonEncode(response.data)}\n\n");
+    }
+    return response;
+  } catch (e) {
+    log(e.toString());
     return DIO.Response(
       requestOptions: DIO.RequestOptions(path: endUrl ?? ""),
       statusCode: 500,

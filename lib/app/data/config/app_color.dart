@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 class AppColor {
   AppColor._();
 
-  // Primary Theme Colors (extracted from onboarding UI)
-  static const Color primary = Color(0xFFFBAF18);
-  static const Color primaryLight = Color(0xFFFFF4DE);
-  static const Color primaryDark = Color(0xFFE09805);
+  // Primary Theme Colors (Royal Blue from logo)
+  static const Color primary = Color(0xFFFF621C);
+  static const Color primaryLight = Color(0xFFEBF1FA);
+  static const Color primaryDark = Color(0xFF284880);
+
+  // Logo Vibrant Orange Accent
+  static const Color accent = Color(0xFF3760A5);
+  static const Color accentLight = Color(0xFFFFF0EB);
 
   // Background & Surface
   static const Color background = Color(0xFFFFFFFF);
@@ -20,7 +24,7 @@ class AppColor {
   static const Color textWhite = Color(0xFFFFFFFF);
 
   // Dot Indicator & Pagination Colors
-  static const Color indicatorActive = Color(0xFFFBAF18);
+  static const Color indicatorActive = Color(0xFF3760A5);
   static const Color indicatorInactive = Color(0xFFE5E7EB);
 
   // Borders & Dividers

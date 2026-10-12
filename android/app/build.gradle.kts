@@ -14,7 +14,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.dream.alifuser.alifuser"
+    namespace = "com.dream.alifbd"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         // Application ID registered on Google Play Console
-        applicationId = "com.dream.alifuser.alifuser"
+        applicationId = "com.dream.alifbd"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

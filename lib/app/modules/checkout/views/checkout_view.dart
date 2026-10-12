@@ -339,26 +339,46 @@ class CheckoutView extends GetView<CheckoutController> {
                             controller.selectPaymentMethod(val ?? 'Razorpay'),
                         child: Column(
                         children: [
-                          // Razorpay Online Radio Option
+                          // bKash Option
                           _buildPaymentMethodTile(
-                            id: 'Razorpay',
-                            title: 'Razorpay Online Payment',
-                            subtitle: 'Instant UPI (GPay, PhonePe), Cards, Net Banking',
+                            id: 'bKash',
+                            title: 'bKash Payment',
+                            subtitle: 'Instant mobile payment via bKash wallet',
                             iconWidget: Container(
-                              width: 30.r,
-                              height: 30.r,
+                              width: 32.r,
+                              height: 32.r,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0C2340),
+                                color: const Color(0xFFE2136E),
                                 borderRadius: BorderRadius.circular(8.r),
                               ),
-                              child: Center(
-                                child: Text(
-                                  'R',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w900,
-                                    color: const Color(0xFF00C4F4),
-                                  ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Divider(color: Color(0xFFF1F5F9), height: 16),
+
+                          // Nagad Option
+                          _buildPaymentMethodTile(
+                            id: 'Nagad',
+                            title: 'Nagad Payment',
+                            subtitle: 'Instant mobile payment via Nagad wallet',
+                            iconWidget: Container(
+                              width: 32.r,
+                              height: 32.r,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF7941D),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: Colors.white,
+                                  size: 18,
                                 ),
                               ),
                             ),
@@ -369,7 +389,7 @@ class CheckoutView extends GetView<CheckoutController> {
                           _buildPaymentMethodTile(
                             id: 'COD',
                             title: 'Cash on Delivery (COD)',
-                            subtitle: 'Pay cash upon delivery',
+                            subtitle: 'Pay cash upon receiving delivery',
                             iconWidget: Icon(
                               Iconsax.money_send,
                               size: 24.r,
@@ -490,10 +510,12 @@ class CheckoutView extends GetView<CheckoutController> {
                         onPressed: () => controller.placeOrder(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              controller.selectedPaymentMethod.value ==
-                                  'Razorpay'
-                              ? const Color(0xFF0284C7)
-                              : AppColor.primary,
+                              controller.selectedPaymentMethod.value == 'bKash'
+                                  ? const Color(0xFFE2136E)
+                                  : (controller.selectedPaymentMethod.value ==
+                                          'Nagad'
+                                      ? const Color(0xFFF7941D)
+                                      : AppColor.primary),
                           elevation: 0,
                           padding: EdgeInsets.symmetric(horizontal: 24.w),
                           shape: RoundedRectangleBorder(
@@ -501,17 +523,16 @@ class CheckoutView extends GetView<CheckoutController> {
                           ),
                         ),
                         child: Text(
-                          controller.selectedPaymentMethod.value == 'Razorpay'
-                              ? 'Pay with Razorpay'
-                              : 'Place Order',
+                          controller.selectedPaymentMethod.value == 'bKash'
+                              ? 'Pay with bKash'
+                              : (controller.selectedPaymentMethod.value ==
+                                      'Nagad'
+                                  ? 'Pay with Nagad'
+                                  : 'Place Order'),
                           style: GoogleFonts.lato(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.bold,
-                            color:
-                                controller.selectedPaymentMethod.value ==
-                                    'Razorpay'
-                                ? Colors.white
-                                : AppColor.textPrimary,
+                            color: Colors.white,
                           ),
                         ),
                       ),

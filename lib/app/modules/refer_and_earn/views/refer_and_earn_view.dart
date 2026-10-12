@@ -122,7 +122,7 @@ class ReferAndEarnView extends GetView<ReferAndEarnController> {
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColor.primary,
-                            foregroundColor: AppColor.textPrimary,
+                            foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10.r),

@@ -174,7 +174,7 @@ class MyWishlistView extends GetView<MyWishlistController> {
                                 style: GoogleFonts.lato(
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColor.textPrimary,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),

@@ -52,5 +52,6 @@ app.*.map.json
 *.keystore
 *.p12
 *.pepk
+*.pem
 key.properties
 

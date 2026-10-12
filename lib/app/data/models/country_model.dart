@@ -12,6 +12,12 @@ class CountryModel {
   });
 
   static const List<CountryModel> defaultCountries = [
+    CountryModel(
+      name: 'Bangladesh',
+      code: 'BD',
+      dialCode: '+880',
+      flag: '🇧🇩',
+    ),
     CountryModel(name: 'India', code: 'IN', dialCode: '+91', flag: '🇮🇳'),
     CountryModel(
       name: 'United Arab Emirates',
@@ -36,12 +42,6 @@ class CountryModel {
       code: 'GB',
       dialCode: '+44',
       flag: '🇬🇧',
-    ),
-    CountryModel(
-      name: 'Bangladesh',
-      code: 'BD',
-      dialCode: '+880',
-      flag: '🇧🇩',
     ),
     CountryModel(name: 'Pakistan', code: 'PK', dialCode: '+92', flag: '🇵🇰'),
     CountryModel(name: 'Qatar', code: 'QA', dialCode: '+974', flag: '🇶🇦'),

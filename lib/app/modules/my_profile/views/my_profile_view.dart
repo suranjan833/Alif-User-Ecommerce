@@ -179,7 +179,7 @@ class MyProfileView extends GetView<MyProfileController> {
                           width: 24.r,
                           height: 24.r,
                           child: const CircularProgressIndicator(
-                            color: Colors.black,
+                            color: Colors.white,
                             strokeWidth: 2.5,
                           ),
                         )
@@ -188,7 +188,7 @@ class MyProfileView extends GetView<MyProfileController> {
                           style: GoogleFonts.lato(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
-                            color: AppColor.textPrimary,
+                            color: Colors.white,
                           ),
                         ),
                 ),

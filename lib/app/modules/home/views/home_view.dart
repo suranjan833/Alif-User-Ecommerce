@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/config/app_image.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../../../data/widgets/typewriter_search_hint.dart';
 import '../../../routes/app_pages.dart';
@@ -17,296 +18,244 @@ class HomeView extends GetView<HomeController> {
   Widget build(BuildContext context) {
     return Obx(
       () => Scaffold(
-        backgroundColor: controller.currentCategory['bgColor'] as Color,
+        backgroundColor: controller.currentCategory.bgColor,
         body: controller.isLoading.value
             ? const SafeArea(child: SkeletonHome())
             : SafeArea(
-          child: RefreshIndicator(
-            color: AppColor.primary,
-            backgroundColor: Colors.white,
-            onRefresh: controller.refreshData,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              slivers: [
-              // 1. Location Header (scrolls away)
-              SliverToBoxAdapter(
-                child: GestureDetector(
-                  onTap: () => _showLocationBottomSheet(context),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: 16.w,
-                      right: 16.w,
-                      top: 10.h,
-                      bottom: 8.h,
+                child: RefreshIndicator(
+                  color: AppColor.primary,
+                  backgroundColor: Colors.white,
+                  onRefresh: controller.refreshData,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Iconsax.location5,
-                          size: 20.r,
-                          color: AppColor.textPrimary,
-                        ),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Obx(
-                            () => Text(
-                              controller.currentLocation.value,
-                              style: GoogleFonts.lato(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                                color: AppColor.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 4.w),
-                        Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          size: 22.r,
-                          color: AppColor.textPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+                    slivers: [
+                      // 1. Location Header (commented out for now)
+                      // SliverToBoxAdapter(
+                      //   child: GestureDetector(
+                      //     onTap: () => _showLocationBottomSheet(context),
+                      //     behavior: HitTestBehavior.opaque,
+                      //     child: Padding(
+                      //       padding: EdgeInsets.only(
+                      //         left: 16.w,
+                      //         right: 16.w,
+                      //         top: 10.h,
+                      //         bottom: 8.h,
+                      //       ),
+                      //       child: Row(
+                      //         children: [
+                      //           Icon(
+                      //             Iconsax.location5,
+                      //             size: 20.r,
+                      //             color: AppColor.textPrimary,
+                      //           ),
+                      //           SizedBox(width: 8.w),
+                      //           Expanded(
+                      //             child: Obx(
+                      //               () => Text(
+                      //                 controller.currentLocation.value,
+                      //                 style: GoogleFonts.lato(
+                      //                   fontSize: 15.sp,
+                      //                   fontWeight: FontWeight.w700,
+                      //                   color: AppColor.textPrimary,
+                      //                 ),
+                      //                 maxLines: 1,
+                      //                 overflow: TextOverflow.ellipsis,
+                      //               ),
+                      //             ),
+                      //           ),
+                      //           SizedBox(width: 4.w),
+                      //           Icon(
+                      //             Icons.keyboard_arrow_down_rounded,
+                      //             size: 22.r,
+                      //             color: AppColor.textPrimary,
+                      //           ),
+                      //         ],
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
 
-              // 2. Sticky Header (Search Bar + Category Tabs Bar)
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _StickyHeaderDelegate(
-                  height: 135.h,
-                  child: Obx(
-                    () => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      color: controller.currentCategory['bgColor'] as Color,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(height: 6.h),
-                          // Search Bar (Dynamic Hint based on Category)
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16.w),
-                            child: Container(
-                              height: 46.h,
-                              padding: EdgeInsets.symmetric(horizontal: 14.w),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24.r),
-                                border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
+                      // 1. Top Bar, Dynamic Category Header Banner & Category Navigation Bar
+                      SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            // Top App Bar Card (Logo, Wishlist, Notifications, Language, Search)
+                            _buildTopHeaderCard(),
+
+                            SizedBox(height: 12.h),
+
+                            // Dynamic Category Mobile Header Background Banner from API
+                            _buildCategoryMobileHeaderBanner(),
+
+                            SizedBox(height: 12.h),
+
+                            // Translucent Category Navigation Tabs Bar
+                            _buildCategoryTabBar(),
+
+                            SizedBox(height: 16.h),
+                          ],
+                        ),
+                      ),
+
+                      // 2. Scrollable Body Content
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Suggested for You Section (Product Grid matching Image 2)
+                            _buildSuggestedProductsSection(),
+
+                            SizedBox(height: 24.h),
+
+                            // 6. Category Showcase Grid Cards
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              padding: EdgeInsets.symmetric(horizontal: 16.w),
+                              physics: const BouncingScrollPhysics(),
                               child: Row(
                                 children: [
-                                  Icon(
-                                    Iconsax.search_normal_1,
-                                    color: AppColor.textSecondary,
-                                    size: 20.r,
+                                  _buildShowcaseCard(
+                                    title: 'Bath & Body',
+                                    subtitle: 'Self-care essentials\nfor a fresh routine',
+                                    bgColor: const Color(0xFFD4EFE8),
+                                    imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=400&auto=format&fit=crop',
                                   ),
                                   SizedBox(width: 12.w),
-                                  Expanded(
-                                    child: TypewriterSearchHintText(
-                                      hints: [
-                                        controller.currentCategory['searchHint']
-                                            as String,
-                                        ...controller.searchHints,
-                                      ],
-                                      style: GoogleFonts.lato(
-                                        fontSize: 14.sp,
-                                        color: AppColor.textSecondary,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
+                                  _buildShowcaseCard(
+                                    title: 'Makeup',
+                                    subtitle:
+                                        'Beauty essentials\nfor every look',
+                                    bgColor: const Color(0xFFFDE2E4),
+                                    imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop',
                                   ),
-                                  Icon(
-                                    Iconsax.edit_2,
-                                    color: AppColor.textSecondary,
-                                    size: 18.r,
+                                  SizedBox(width: 12.w),
+                                  _buildShowcaseCard(
+                                    title: 'Fragrance &\nDeodorant',
+                                    subtitle: 'Fresh scents that\nlast all day',
+                                    bgColor: const Color(0xFFE6E1FA),
+                                    imageUrl: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=400&auto=format&fit=crop',
                                   ),
                                 ],
                               ),
                             ),
-                          ),
 
-                          SizedBox(height: 12.h),
+                            SizedBox(height: 24.h),
 
-                          // Category Horizontal Filter Tabs
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            padding: EdgeInsets.symmetric(horizontal: 16.w),
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              children: List.generate(
-                                controller.categories.length,
-                                (index) => _buildCategoryTab(index),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 3. Scrollable Body Content
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 12.h),
-
-                    // 4. Hero Banner Card (Dynamic per Category)
-                    Obx(
-                      () => Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          width: double.infinity,
-                          height: 225.h,
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(18.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    (controller.currentCategory['accentColor']
-                                            as Color)
-                                        .withValues(alpha: 0.12),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            children: [
-                              // Banner Background Image
-                              Image.network(
-                                controller.currentCategory['bannerImage']
-                                    as String,
+                            // 7. Level It Up Promo Banner
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16.w),
+                              child: Container(
                                 width: double.infinity,
-                                height: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                      color: const Color(0xFFEADCC9),
-                                      child: Center(
-                                        child: Icon(
-                                          Iconsax.image,
-                                          size: 48.r,
-                                          color: AppColor.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                              ),
-                              // Semi-gradient Overlay for high text readability
-                              Container(
+                                padding: EdgeInsets.all(16.w),
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                    colors: [
-                                      (controller.currentCategory['bgColor']
-                                              as Color)
-                                          .withValues(alpha: 0.92),
-                                      (controller.currentCategory['bgColor']
-                                              as Color)
-                                          .withValues(alpha: 0.5),
-                                      Colors.transparent,
-                                    ],
-                                  ),
+                                  color: const Color(0xFF232936),
+                                  borderRadius: BorderRadius.circular(16.r),
                                 ),
-                              ),
-                              // Text & Call to Action
-                              Positioned(
-                                left: 20.w,
-                                top: 22.h,
-                                bottom: 22.h,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Row(
                                   children: [
-                                    Text(
-                                      controller.currentCategory['bannerTitle']
-                                          as String,
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 20.sp,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.8,
-                                        color:
-                                            controller
-                                                    .currentCategory['accentColor']
-                                                as Color,
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10.r),
+                                      child: Image.network(
+                                        'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=400&auto=format&fit=crop',
+                                        width: 100.w,
+                                        height: 80.h,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  width: 100.w,
+                                                  height: 80.h,
+                                                  color: Colors.grey.shade700,
+                                                  child: const Icon(
+                                                    Iconsax.shopping_bag,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
                                       ),
                                     ),
-                                    SizedBox(height: 2.h),
-                                    Text(
-                                      controller
-                                              .currentCategory['bannerSubtitle']
-                                          as String,
-                                      style: GoogleFonts.playfairDisplay(
-                                        fontSize: 16.sp,
-                                        fontStyle: FontStyle.italic,
-                                        fontWeight: FontWeight.w600,
-                                        color:
-                                            controller
-                                                    .currentCategory['subtitleColor']
-                                                as Color,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 16.w,
-                                        vertical: 8.h,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            controller
-                                                    .currentCategory['buttonColor']
-                                                as Color,
-                                        borderRadius: BorderRadius.circular(
-                                          20.r,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                (controller.currentCategory['buttonColor']
-                                                        as Color)
-                                                    .withValues(alpha: 0.35),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                    SizedBox(width: 14.w),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              const SizedBox(),
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 10.w,
+                                                  vertical: 4.h,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFFFF9900,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        6.r,
+                                                      ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      'LEVEL IT UP',
+                                                      style: GoogleFonts.lato(
+                                                        fontSize: 10.sp,
+                                                        fontWeight:
+                                                            FontWeight.w900,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 2.w),
+                                                    Icon(
+                                                      Icons.north_east_rounded,
+                                                      size: 12.r,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 4.h),
                                           Text(
-                                            'Explore Now',
-                                            style: GoogleFonts.lato(
-                                              fontSize: 12.sp,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
+                                            'BUY 3\nGET EXTRA\n10% OFF',
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 16.sp,
+                                              fontWeight: FontWeight.w900,
+                                              color: const Color(0xFFFFB800),
+                                              height: 1.1,
                                             ),
                                           ),
-                                          SizedBox(width: 4.w),
-                                          Icon(
-                                            Icons.chevron_right_rounded,
-                                            color: Colors.white,
-                                            size: 16.r,
+                                          SizedBox(height: 8.h),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8.w,
+                                              vertical: 3.h,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.15,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(4.r),
+                                            ),
+                                            child: Text(
+                                              'Offer auto-applies at checkout',
+                                              style: GoogleFonts.lato(
+                                                fontSize: 9.sp,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.9,
+                                                ),
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -314,227 +263,68 @@ class HomeView extends GetView<HomeController> {
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 24.h),
-
-                    // 5. Suggested for You Section (Product Grid matching Image 2)
-                    _buildSuggestedProductsSection(),
-
-                    SizedBox(height: 24.h),
-
-                    // 6. Category Showcase Grid Cards
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          _buildShowcaseCard(
-                            title: 'Bath & Body',
-                            subtitle:
-                                'Self-care essentials\nfor a fresh routine',
-                            bgColor: const Color(0xFFD4EFE8),
-                            imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=400&auto=format&fit=crop',
-                          ),
-                          SizedBox(width: 12.w),
-                          _buildShowcaseCard(
-                            title: 'Makeup',
-                            subtitle: 'Beauty essentials\nfor every look',
-                            bgColor: const Color(0xFFFDE2E4),
-                            imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop',
-                          ),
-                          SizedBox(width: 12.w),
-                          _buildShowcaseCard(
-                            title: 'Fragrance &\nDeodorant',
-                            subtitle: 'Fresh scents that\nlast all day',
-                            bgColor: const Color(0xFFE6E1FA),
-                            imageUrl: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=400&auto=format&fit=crop',
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 24.h),
-
-                    // 7. Level It Up Promo Banner
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(16.w),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF232936),
-                          borderRadius: BorderRadius.circular(16.r),
-                        ),
-                        child: Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10.r),
-                              child: Image.network(
-                                'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=400&auto=format&fit=crop',
-                                width: 100.w,
-                                height: 80.h,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                      width: 100.w,
-                                      height: 80.h,
-                                      color: Colors.grey.shade700,
-                                      child: const Icon(
-                                        Iconsax.shopping_bag,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                              ),
                             ),
-                            SizedBox(width: 14.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+
+                            SizedBox(height: 24.h),
+
+                            // 8. Top Brands Section Header
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16.w),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const SizedBox(),
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 10.w,
-                                          vertical: 4.h,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFF9900),
-                                          borderRadius: BorderRadius.circular(
-                                            6.r,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              'LEVEL IT UP',
-                                              style: GoogleFonts.lato(
-                                                fontSize: 10.sp,
-                                                fontWeight: FontWeight.w900,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            SizedBox(width: 2.w),
-                                            Icon(
-                                              Icons.north_east_rounded,
-                                              size: 12.r,
-                                              color: Colors.white,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 4.h),
                                   Text(
-                                    'BUY 3\nGET EXTRA\n10% OFF',
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w900,
-                                      color: const Color(0xFFFFB800),
-                                      height: 1.1,
+                                    'Top Brands',
+                                    style: GoogleFonts.lato(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColor.textPrimary,
                                     ),
                                   ),
-                                  SizedBox(height: 8.h),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.w,
-                                      vertical: 3.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                      borderRadius: BorderRadius.circular(4.r),
-                                    ),
-                                    child: Text(
-                                      'Offer auto-applies at checkout',
-                                      style: GoogleFonts.lato(
-                                        fontSize: 9.sp,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                      ),
+                                  Text(
+                                    'See All',
+                                    style: GoogleFonts.lato(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColor.textSecondary,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
+
+                            SizedBox(height: 14.h),
+
+                            // Top Brands Logo Cards Horizontal Scroll
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              padding: EdgeInsets.symmetric(horizontal: 16.w),
+                              physics: const BouncingScrollPhysics(),
+                              child: Obx(
+                                () => Row(
+                                  children: controller.topBrands
+                                      .map((brand) => _buildBrandCard(brand))
+                                      .toList(),
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: 30.h),
                           ],
                         ),
                       ),
-                    ),
-
-                    SizedBox(height: 24.h),
-
-                    // 8. Top Brands Section Header
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Top Brands',
-                            style: GoogleFonts.lato(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.w800,
-                              color: AppColor.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            'See All',
-                            style: GoogleFonts.lato(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColor.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 14.h),
-
-                    // Top Brands Logo Cards Horizontal Scroll
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: controller.topBrands
-                            .map((brand) => _buildBrandCard(brand))
-                            .toList(),
-                      ),
-                    ),
-
-                    SizedBox(height: 30.h),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-        ),
       ),
     );
   }
 
   Widget _buildSuggestedProductsSection() {
     return Obx(() {
-      final products =
-          controller.currentCategory['products']
-              as List<Map<String, dynamic>>? ??
-          [];
+      final products = controller.currentCategory.products;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,7 +377,7 @@ class HomeView extends GetView<HomeController> {
       onTap: () => Get.toNamed(Routes.PRODUCT_DETAILS, arguments: product),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 155.w,
+        width: 160.w,
         margin: EdgeInsets.only(right: 14.w),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -669,39 +459,47 @@ class HomeView extends GetView<HomeController> {
                   SizedBox(height: 4.h),
 
                   // Discount Badge
-                  Text(
-                    product['discount'] as String,
-                    style: GoogleFonts.lato(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF15803D),
+                  if ((product['discount'] as String?)?.isNotEmpty ?? false)
+                    Text(
+                      product['discount'] as String,
+                      style: GoogleFonts.lato(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF15803D),
+                      ),
                     ),
-                  ),
 
                   SizedBox(height: 4.h),
 
-                  // Price and Original Price
-                  Row(
-                    children: [
-                      Text(
-                        product['price'] as String,
-                        style: GoogleFonts.lato(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w900,
-                          color: AppColor.textPrimary,
+                  // Price and Original Price (Responsive Wrap without overflow)
+                  Padding(
+                    padding: EdgeInsets.only(right: 28.w),
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 5.w,
+                      runSpacing: 2.h,
+                      children: [
+                        Text(
+                          product['price'] as String,
+                          style: GoogleFonts.lato(
+                            fontSize: 13.5.sp,
+                            fontWeight: FontWeight.w900,
+                            color: AppColor.textPrimary,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        product['originalPrice'] as String,
-                        style: GoogleFonts.lato(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w500,
-                          color: AppColor.textHint,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                    ],
+                        if ((product['originalPrice'] as String?)?.isNotEmpty ??
+                            false)
+                          Text(
+                            product['originalPrice'] as String,
+                            style: GoogleFonts.lato(
+                              fontSize: 10.5.sp,
+                              fontWeight: FontWeight.w500,
+                              color: AppColor.textHint,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -734,70 +532,312 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
+  Widget _buildTopHeaderCard() {
+    return Container(
+      margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+      padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 12.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Row 1: Logo on left, Wishlist + Notifications + Language on right
+          Row(
+            children: [
+              Image.asset(AppImage.logo, height: 28.h, fit: BoxFit.contain),
+              const Spacer(),
+              // Wishlist Heart
+              GestureDetector(
+                onTap: () => Get.toNamed(Routes.MY_WISHLIST),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w),
+                  child: Icon(
+                    Iconsax.heart,
+                    size: 22.r,
+                    color: AppColor.textPrimary,
+                  ),
+                ),
+              ),
+              // Notifications Bell
+              GestureDetector(
+                onTap: () => Get.toNamed(Routes.NOTIFICATIONS),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w),
+                  child: Icon(
+                    Iconsax.notification,
+                    size: 22.r,
+                    color: AppColor.textPrimary,
+                  ),
+                ),
+              ),
+              // Language Selector
+              Container(
+                margin: EdgeInsets.only(left: 4.w),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'EN',
+                      style: GoogleFonts.lato(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.textPrimary,
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16.r,
+                      color: AppColor.textPrimary,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 10.h),
+
+          // Row 2: Search input with orange search button on right
+          Container(
+            height: 44.h,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22.r),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: 14.w),
+                Expanded(
+                  child: Obx(
+                    () => TypewriterSearchHintText(
+                      hints: [
+                        controller.currentCategory.searchHint,
+                        ...controller.searchHints,
+                      ],
+                      style: GoogleFonts.lato(
+                        fontSize: 13.5.sp,
+                        color: AppColor.textSecondary,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ),
+                // Orange search button
+                Container(
+                  width: 48.w,
+                  height: 44.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5A00),
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(22.r),
+                      bottomRight: Radius.circular(22.r),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryMobileHeaderBanner() {
+    return Obx(() {
+      final headerUrl = controller.currentCategory.headerBgMobileUrl;
+
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20.r),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 350),
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
+            child: Container(
+              key: ValueKey<String>(headerUrl),
+              width: double.infinity,
+              height: 220.h,
+              decoration: BoxDecoration(
+                color: controller.currentCategory.bgColor,
+              ),
+              child: Image.network(
+                headerUrl,
+                width: double.infinity,
+                height: 220.h,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFFF1F5F9),
+                  child: Center(
+                    child: Icon(
+                      Iconsax.image,
+                      size: 40.r,
+                      color: AppColor.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildCategoryTabBar() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
+      padding: EdgeInsets.symmetric(vertical: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: const Color(0xFFECEEF2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        physics: const BouncingScrollPhysics(),
+        child: Obx(
+          () => Row(
+            children: List.generate(
+              controller.categories.length,
+              (index) => _buildCategoryTab(index),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryTab(int index) {
     final category = controller.categories[index];
     final isSelected = controller.selectedCategoryIndex.value == index;
 
-    IconData getIcon(String iconName) {
-      switch (iconName) {
+    IconData getCategoryIcon(String iconName) {
+      switch (iconName.toLowerCase()) {
         case 'all':
-          return Iconsax.shopping_bag;
-        case 'furniture':
-          return Iconsax.lamp;
+          return Icons.shopping_bag_outlined;
         case 'electronics':
-          return Iconsax.headphone;
+          return Icons.phone_android_rounded;
+        case 'fashion':
         case 'clothing':
-          return Iconsax.discount_shape;
+          return Icons.checkroom_rounded;
+        case 'home-living':
+        case 'furniture':
+          return Icons.chair_outlined;
+        case 'beauty':
         case 'cosmetics':
-          return Iconsax.magic_star;
+          return Icons.brush_outlined;
+        case 'health':
+          return Icons.health_and_safety_outlined;
+        case 'grocery':
+          return Icons.shopping_basket_outlined;
+        case 'baby-kids':
+          return Icons.child_care_rounded;
+        case 'sports':
+          return Icons.fitness_center_rounded;
+        case 'automotive':
+          return Icons.directions_car_rounded;
+        case 'books':
+          return Icons.menu_book_rounded;
+        case 'toys':
+          return Icons.sports_esports_rounded;
+        case 'jewelry':
+          return Icons.diamond_outlined;
+        case 'pets':
+          return Icons.pets_rounded;
+        case 'tools':
+          return Icons.build_rounded;
         default:
-          return Iconsax.category;
+          return Icons.category_outlined;
       }
     }
 
     return GestureDetector(
       onTap: () => controller.selectCategory(index),
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: EdgeInsets.only(right: 20.w),
+        margin: EdgeInsets.symmetric(horizontal: 6.w),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 44.w,
-              height: 44.h,
+              width: 44.r,
+              height: 44.r,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColor.textPrimary.withValues(alpha: 0.05)
+                    ? const Color(0xFFFFF0EB)
                     : Colors.transparent,
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Icon(
-                  getIcon(category['icon']),
+                  getCategoryIcon(category.icon),
                   size: 22.r,
                   color: isSelected
-                      ? AppColor.textPrimary
-                      : AppColor.textSecondary,
+                      ? const Color(0xFFFF5A00)
+                      : const Color(0xFF6B7280),
                 ),
               ),
             ),
             SizedBox(height: 4.h),
-            Text(
-              category['name'],
-              style: GoogleFonts.lato(
-                fontSize: 12.sp,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? AppColor.textPrimary
-                    : AppColor.textSecondary,
+            SizedBox(
+              width: 66.w,
+              child: Text(
+                category.name,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.lato(
+                  fontSize: 11.5.sp,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? const Color(0xFFFF5A00)
+                      : const Color(0xFF4B5563),
+                  height: 1.15,
+                ),
               ),
             ),
             SizedBox(height: 4.h),
             Container(
-              height: 2.h,
-              width: 24.w,
+              height: 2.5.h,
+              width: 22.w,
               decoration: BoxDecoration(
-                color: isSelected ? AppColor.textPrimary : Colors.transparent,
-                borderRadius: BorderRadius.circular(1.r),
+                color: isSelected
+                    ? const Color(0xFFFF5A00)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(2.r),
               ),
             ),
           ],
@@ -894,6 +934,7 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
+  // ignore: unused_element
   void _showLocationBottomSheet(BuildContext context) {
     final textController = TextEditingController();
 
@@ -1247,6 +1288,7 @@ class HomeView extends GetView<HomeController> {
   }
 }
 
+// ignore: unused_element
 class _StickyHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;
   final double height;

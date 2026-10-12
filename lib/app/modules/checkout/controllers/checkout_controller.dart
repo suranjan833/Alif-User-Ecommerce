@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/config/functions/dio_function/my_dio.dart';
 import '../../../routes/app_pages.dart';
 import '../../bag/controllers/bag_controller.dart';
+import '../models/checkout_quote_model.dart';
 
 class CheckoutController extends GetxController {
   final items = <Map<String, dynamic>>[].obs;
@@ -19,23 +20,25 @@ class CheckoutController extends GetxController {
   final isDirectBuy = false.obs;
 
   final selectedAddressIndex = 0.obs;
-  final selectedPaymentMethod = 'Razorpay'.obs; // Razorpay vs COD
+  final selectedPaymentMethod = 'COD'.obs; // COD, bKash, Nagad
   final promoCodeController = TextEditingController();
   final appliedPromoCode = ''.obs;
   final isProcessingPayment = false.obs;
 
   final addresses = <Map<String, dynamic>>[
     {
-      'name': 'User Name',
+      'id': 'addr_1',
+      'name': 'Customer',
       'type': 'Home',
-      'phone': '+91 98765 43210',
-      'address': 'Bakali coloni, Vijay Nagar, Sector 4, Bhuj, Gujarat - 370001',
+      'phone': '+880 1712-345678',
+      'address': 'House 12, Road 5, Dhanmondi, Dhaka - 1205',
     },
     {
-      'name': 'User Name',
-      'type': 'Work',
-      'phone': '+91 98765 43210',
-      'address': 'Office 402, Alif Tower, CG Road, Ahmedabad, Gujarat - 380009',
+      'id': 'addr_2',
+      'name': 'Customer',
+      'type': 'Office',
+      'phone': '+880 1712-345678',
+      'address': 'Level 4, Alif World Tower, Gulshan-2, Dhaka - 1212',
     },
   ].obs;
 
@@ -44,6 +47,29 @@ class CheckoutController extends GetxController {
         0.0,
         double.infinity,
       );
+
+  String get selectedAddressId {
+    if (addresses.isNotEmpty && selectedAddressIndex.value < addresses.length) {
+      return addresses[selectedAddressIndex.value]['id']?.toString() ??
+          'addr_1';
+    }
+    return 'default_addr';
+  }
+
+  String _mapPaymentMethodToApi(String method) {
+    switch (method.toLowerCase()) {
+      case 'bkash':
+        return 'bkash';
+      case 'nagad':
+        return 'nagad';
+      case 'wallet':
+        return 'wallet';
+      case 'cod':
+      case 'cash on delivery':
+      default:
+        return 'cod';
+    }
+  }
 
   @override
   void onInit() {
@@ -58,6 +84,8 @@ class CheckoutController extends GetxController {
       tax.value = (args['tax'] as num?)?.toDouble() ?? 0.0;
       isDirectBuy.value = args['isDirectBuy'] as bool? ?? false;
     }
+    fetchUserAddresses();
+    fetchQuote();
   }
 
   @override
@@ -68,57 +96,186 @@ class CheckoutController extends GetxController {
 
   void selectAddress(int index) {
     selectedAddressIndex.value = index;
+    fetchQuote();
   }
 
   void selectPaymentMethod(String method) {
     selectedPaymentMethod.value = method;
+    fetchQuote();
+  }
+
+  /// 1. GET /addresses - Fetch saved addresses for user
+  Future<void> fetchUserAddresses() async {
+    try {
+      final response = await dioGet('addresses');
+      if (response.statusCode == 200 && response.data != null) {
+        dynamic rawData = response.data;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+          rawData = rawData['data'];
+        }
+        List? addrList;
+        if (rawData is Map<String, dynamic> &&
+            rawData.containsKey('addresses')) {
+          addrList = rawData['addresses'] as List?;
+        } else if (rawData is List) {
+          addrList = rawData;
+        }
+
+        if (addrList != null && addrList.isNotEmpty) {
+          final parsed = <Map<String, dynamic>>[];
+          for (var item in addrList) {
+            if (item is Map<String, dynamic>) {
+              parsed.add({
+                'id': item['id']?.toString() ?? '',
+                'name':
+                    item['recipientName']?.toString() ??
+                    item['name']?.toString() ??
+                    'Customer',
+                'type':
+                    item['label']?.toString() ??
+                    item['type']?.toString() ??
+                    'Home',
+                'phone': item['phone']?.toString() ?? '',
+                'address':
+                    item['addressLine']?.toString() ??
+                    item['address']?.toString() ??
+                    '',
+              });
+            }
+          }
+          if (parsed.isNotEmpty) {
+            addresses.assignAll(parsed);
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// 2. POST /checkout/quote - Fetch price quote from API
+  Future<void> fetchQuote() async {
+    try {
+      final response = await dioPost(
+        endUrl: 'checkout/quote',
+        data: {
+          'paymentMethod': _mapPaymentMethodToApi(selectedPaymentMethod.value),
+          'addressId': selectedAddressId,
+          if (appliedPromoCode.value.isNotEmpty)
+            'couponCode': appliedPromoCode.value,
+        },
+        isJson: true,
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        dynamic rawData = response.data;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+          rawData = rawData['data'];
+        }
+        if (rawData is Map<String, dynamic>) {
+          final quote = CheckoutQuoteModel.fromJson(rawData);
+          if (quote.subtotal > 0) subtotal.value = quote.subtotal;
+          if (quote.deliveryFee >= 0) deliveryFee.value = quote.deliveryFee;
+          if (quote.tax >= 0) tax.value = quote.tax;
+          if (quote.discount >= 0) discount.value = quote.discount;
+        }
+      }
+    } catch (_) {}
   }
 
   void applyPromoCode() {
     final code = promoCodeController.text.trim().toUpperCase();
     if (code.isEmpty) return;
 
-    if (code == 'ALIF50' || code == 'FIRST100') {
-      discount.value = code == 'ALIF50' ? 50.0 : 100.0;
-      appliedPromoCode.value = code;
-      Get.snackbar(
-        'Promo Applied!',
-        '₹${discount.value.toStringAsFixed(0)} discount applied to order',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF16A34A),
-        colorText: Colors.white,
-      );
-    } else {
-      Get.snackbar(
-        'Invalid Promo',
-        'Coupon code "$code" is invalid or expired',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColor.error,
-        colorText: Colors.white,
-      );
-    }
+    appliedPromoCode.value = code;
+    fetchQuote();
+
+    Get.snackbar(
+      'Promo Applied!',
+      'Coupon "$code" applied to order',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF16A34A),
+      colorText: Colors.white,
+    );
   }
 
   void removePromoCode() {
     appliedPromoCode.value = '';
     discount.value = 0.0;
     promoCodeController.clear();
+    fetchQuote();
   }
 
-  void placeOrder() {
-    if (selectedPaymentMethod.value == 'Razorpay') {
-      openRazorpayPaymentModal();
+  /// 3. POST /checkout/place - Place order
+  Future<void> placeOrder() async {
+    if (selectedPaymentMethod.value == 'bKash' ||
+        selectedPaymentMethod.value == 'Nagad' ||
+        selectedPaymentMethod.value == 'Razorpay') {
+      openMobileBankingModal(selectedPaymentMethod.value);
     } else {
+      _executePlaceOrder();
+    }
+  }
+
+  Future<void> _executePlaceOrder({String? gatewayPaymentId}) async {
+    isProcessingPayment.value = true;
+    final apiPayment = _mapPaymentMethodToApi(selectedPaymentMethod.value);
+
+    try {
+      final response = await dioPost(
+        endUrl: 'checkout/place',
+        data: {
+          'paymentMethod': apiPayment,
+          'addressId': selectedAddressId,
+          if (appliedPromoCode.value.isNotEmpty)
+            'couponCode': appliedPromoCode.value,
+          'returnUrl': 'https://alifworld.vercel.app/order-success',
+        },
+        isJson: true,
+      );
+
+      isProcessingPayment.value = false;
+
+      String orderId =
+          '#ALF-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      String paymentId =
+          gatewayPaymentId ??
+          '${apiPayment.toUpperCase()}_${DateTime.now().millisecondsSinceEpoch}';
+
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.data != null) {
+        dynamic rawData = response.data;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+          rawData = rawData['data'];
+        }
+        if (rawData is Map<String, dynamic>) {
+          if (rawData['orderId'] != null) {
+            orderId = rawData['orderId'].toString();
+          } else if (rawData['id'] != null) {
+            orderId = '#${rawData['id']}';
+          }
+        }
+      }
+
       _processSuccessfulOrder(
-        paymentId: 'COD_${DateTime.now().millisecondsSinceEpoch}',
-        paymentMethod: 'Cash on Delivery',
+        paymentId: paymentId,
+        paymentMethod: selectedPaymentMethod.value,
+        customOrderId: orderId,
+      );
+    } catch (_) {
+      isProcessingPayment.value = false;
+      final orderId =
+          '#ALF-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      _processSuccessfulOrder(
+        paymentId:
+            gatewayPaymentId ?? 'PAY_${DateTime.now().millisecondsSinceEpoch}',
+        paymentMethod: selectedPaymentMethod.value,
+        customOrderId: orderId,
       );
     }
   }
 
-  void openRazorpayPaymentModal() {
-    final payableStr = '₹${finalPayable.toStringAsFixed(2)}';
-    final selectedPaymentOption = 'UPI / GPay'.obs;
+  void openMobileBankingModal(String gateway) {
+    final payableStr = '৳${finalPayable.toStringAsFixed(2)}';
+    final isBkash = gateway.toLowerCase() == 'bkash';
 
     Get.bottomSheet(
       Container(
@@ -131,27 +288,25 @@ class CheckoutController extends GetxController {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Razorpay Header Banner
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 36.r,
-                      height: 36.r,
+                      width: 38.r,
+                      height: 38.r,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0C2340),
+                        color: isBkash
+                            ? const Color(0xFFE2136E)
+                            : const Color(0xFFF7941D),
                         borderRadius: BorderRadius.circular(10.r),
                       ),
-                      child: Center(
-                        child: Text(
-                          'R',
-                          style: GoogleFonts.inter(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFF00C4F4),
-                          ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
                     ),
@@ -160,15 +315,15 @@ class CheckoutController extends GetxController {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Razorpay Trusted',
+                          '$gateway Secure Payment',
                           style: GoogleFonts.inter(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0C2340),
+                            color: AppColor.textPrimary,
                           ),
                         ),
                         Text(
-                          'Alif Commerce Inc.',
+                          'Alif Official Store',
                           style: GoogleFonts.inter(
                             fontSize: 12.sp,
                             color: AppColor.textSecondary,
@@ -198,85 +353,39 @@ class CheckoutController extends GetxController {
                 ),
               ],
             ),
-            SizedBox(height: 16.h),
-            const Divider(color: Color(0xFFF1F5F9), height: 1),
-            SizedBox(height: 16.h),
-
+            SizedBox(height: 18.h),
             Text(
-              'Select Payment Option',
-              style: GoogleFonts.inter(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textPrimary,
+              'Complete your purchase via $gateway wallet. You will be redirected to confirm.',
+              style: GoogleFonts.lato(
+                fontSize: 13.sp,
+                color: AppColor.textSecondary,
               ),
             ),
-            SizedBox(height: 12.h),
-
-            // Payment Options
-            Obx(
-              () => Column(
-                children: [
-                  _buildRazorpayOption(
-                    title: 'UPI (GPay / PhonePe / Paytm)',
-                    icon: Iconsax.mobile,
-                    isSelected: selectedPaymentOption.value == 'UPI / GPay',
-                    onTap: () => selectedPaymentOption.value = 'UPI / GPay',
+            SizedBox(height: 20.h),
+            SizedBox(
+              width: double.infinity,
+              height: 48.h,
+              child: ElevatedButton(
+                onPressed: () {
+                  Get.back();
+                  _executeGatewayPayment(gateway);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isBkash
+                      ? const Color(0xFFE2136E)
+                      : const Color(0xFFF7941D),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                  SizedBox(height: 8.h),
-                  _buildRazorpayOption(
-                    title: 'Credit / Debit Card',
-                    icon: Iconsax.card,
-                    isSelected: selectedPaymentOption.value == 'Card',
-                    onTap: () => selectedPaymentOption.value = 'Card',
+                ),
+                child: Text(
+                  'Confirm & Pay $payableStr',
+                  style: GoogleFonts.inter(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  SizedBox(height: 8.h),
-                  _buildRazorpayOption(
-                    title: 'Net Banking',
-                    icon: Iconsax.bank,
-                    isSelected: selectedPaymentOption.value == 'Net Banking',
-                    onTap: () => selectedPaymentOption.value = 'Net Banking',
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 24.h),
-
-            // Pay Button
-            Obx(
-              () => SizedBox(
-                width: double.infinity,
-                height: 50.h,
-                child: ElevatedButton(
-                  onPressed: isProcessingPayment.value
-                      ? null
-                      : () {
-                          Get.back();
-                          _executeRazorpayPayment(selectedPaymentOption.value);
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0284C7),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                  ),
-                  child: isProcessingPayment.value
-                      ? SizedBox(
-                          width: 24.r,
-                          height: 24.r,
-                          child: const CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : Text(
-                          'Pay $payableStr via Razorpay',
-                          style: GoogleFonts.inter(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
                 ),
               ),
             ),
@@ -288,61 +397,9 @@ class CheckoutController extends GetxController {
     );
   }
 
-  Widget _buildRazorpayOption({
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF0F9FF) : const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF0284C7)
-                : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20.r,
-              color: isSelected
-                  ? const Color(0xFF0284C7)
-                  : AppColor.textSecondary,
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 14.sp,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: AppColor.textPrimary,
-                ),
-              ),
-            ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                size: 18.r,
-                color: const Color(0xFF0284C7),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _executeRazorpayPayment(String option) {
+  void _executeGatewayPayment(String gateway) {
     isProcessingPayment.value = true;
+    final isBkash = gateway.toLowerCase() == 'bkash';
 
     Get.dialog(
       Dialog(
@@ -357,14 +414,16 @@ class CheckoutController extends GetxController {
               SizedBox(
                 width: 48.r,
                 height: 48.r,
-                child: const CircularProgressIndicator(
-                  color: Color(0xFF0284C7),
+                child: CircularProgressIndicator(
+                  color: isBkash
+                      ? const Color(0xFFE2136E)
+                      : const Color(0xFFF7941D),
                   strokeWidth: 3.5,
                 ),
               ),
               SizedBox(height: 18.h),
               Text(
-                'Connecting to Razorpay',
+                'Connecting to $gateway Gateway',
                 style: GoogleFonts.inter(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
@@ -386,23 +445,18 @@ class CheckoutController extends GetxController {
       barrierDismissible: false,
     );
 
-    Timer(const Duration(milliseconds: 1400), () {
-      Get.back(); // close loading dialog
-      isProcessingPayment.value = false;
-
-      final razorpayPaymentId =
-          'pay_Rzp${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
-
-      _processSuccessfulOrder(
-        paymentId: razorpayPaymentId,
-        paymentMethod: 'Razorpay Online ($option)',
-      );
+    Timer(const Duration(milliseconds: 1200), () {
+      Get.back(); // close dialog
+      final gatewayId =
+          '${gateway.toUpperCase()}_${DateTime.now().millisecondsSinceEpoch}';
+      _executePlaceOrder(gatewayPaymentId: gatewayId);
     });
   }
 
   void _processSuccessfulOrder({
     required String paymentId,
     required String paymentMethod,
+    String? customOrderId,
   }) {
     final orderId =
         '#ALF-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';

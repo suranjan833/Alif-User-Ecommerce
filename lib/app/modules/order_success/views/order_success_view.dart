@@ -160,7 +160,7 @@ class OrderSuccessView extends GetView<OrderSuccessController> {
                     style: GoogleFonts.lato(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.bold,
-                      color: AppColor.textPrimary,
+                      color: Colors.white,
                     ),
                   ),
                 ),

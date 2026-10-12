@@ -8,6 +8,7 @@ import '../../../data/config/app_color.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/categories_controller.dart';
+import '../models/category_model.dart';
 
 class CategoriesView extends GetView<CategoriesController> {
   const CategoriesView({super.key});
@@ -126,12 +127,14 @@ class CategoriesView extends GetView<CategoriesController> {
     );
   }
 
-  Widget _buildCategoryCard(Map<String, dynamic> item) {
-    final accent = item['accent'] as Color? ?? const Color(0xFFEFF1F5);
+  Widget _buildCategoryCard(CategoryModel item) {
+    final accent = item.accent ?? const Color(0xFFEFF1F5);
+    final imageUrl = item.image ?? 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400&auto=format&fit=crop';
+    final name = item.name ?? 'Category';
 
     return _PressableCard(
       onTap: () {
-        Get.toNamed(Routes.CATEGORY_PRODUCTS, arguments: item);
+        Get.toNamed(Routes.CATEGORY_PRODUCTS, arguments: item.toJson());
       },
       child: Container(
         clipBehavior: Clip.antiAlias,
@@ -164,7 +167,7 @@ class CategoriesView extends GetView<CategoriesController> {
                 padding: EdgeInsets.all(6.r),
                 child: ClipOval(
                   child: Image.network(
-                    item['image'] as String,
+                    imageUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey.shade300,
@@ -185,7 +188,7 @@ class CategoriesView extends GetView<CategoriesController> {
               top: 14.h,
               right: 52.w,
               child: Text(
-                item['name'] as String,
+                name,
                 style: GoogleFonts.inter(
                   fontSize: 13.sp,
                   fontWeight: FontWeight.w700,
@@ -209,7 +212,7 @@ class CategoriesView extends GetView<CategoriesController> {
                   borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Text(
-                  '${item['count']} items',
+                  '${item.count} items',
                   style: GoogleFonts.inter(
                     fontSize: 9.5.sp,
                     fontWeight: FontWeight.w600,

@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../data/config/app_color.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/my_orders_controller.dart';
+import '../models/order_model.dart';
 
 class MyOrdersView extends GetView<MyOrdersController> {
   const MyOrdersView({super.key});
@@ -138,9 +139,9 @@ class MyOrdersView extends GetView<MyOrdersController> {
     );
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order) {
-    final items = order['items'] as List<Map<String, dynamic>>;
-    final status = order['status'] as String;
+  Widget _buildOrderCard(OrderModel order) {
+    final items = order.items;
+    final status = order.status;
 
     Color statusColor;
     Color statusBg;
@@ -180,7 +181,7 @@ class MyOrdersView extends GetView<MyOrdersController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    order['orderId'] as String,
+                    order.orderId,
                     style: GoogleFonts.lato(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.bold,
@@ -189,7 +190,7 @@ class MyOrdersView extends GetView<MyOrdersController> {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    'Placed on ${order['date']}',
+                    'Placed on ${order.date}',
                     style: GoogleFonts.lato(
                       fontSize: 12.sp,
                       color: AppColor.textSecondary,
@@ -232,15 +233,21 @@ class MyOrdersView extends GetView<MyOrdersController> {
                       color: const Color(0xFFF8F9FA),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: Image.network(
-                      item['image'] as String,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Iconsax.image,
-                        size: 22.r,
-                        color: AppColor.textSecondary,
-                      ),
-                    ),
+                    child: item.image.isNotEmpty
+                        ? Image.network(
+                            item.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Iconsax.image,
+                              size: 22.r,
+                              color: AppColor.textSecondary,
+                            ),
+                          )
+                        : Icon(
+                            Iconsax.image,
+                            size: 22.r,
+                            color: AppColor.textSecondary,
+                          ),
                   ),
                   SizedBox(width: 12.w),
                   Expanded(
@@ -248,7 +255,7 @@ class MyOrdersView extends GetView<MyOrdersController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item['name'] as String,
+                          item.name,
                           style: GoogleFonts.lato(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
@@ -259,7 +266,7 @@ class MyOrdersView extends GetView<MyOrdersController> {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          'Qty: ${item['quantity']} • ${item['price']}',
+                          'Qty: ${item.quantity} • ৳${item.price.toStringAsFixed(2)}',
                           style: GoogleFonts.lato(
                             fontSize: 12.sp,
                             color: AppColor.textSecondary,
@@ -289,7 +296,7 @@ class MyOrdersView extends GetView<MyOrdersController> {
                   ),
                   children: [
                     TextSpan(
-                      text: order['total'] as String,
+                      text: order.formattedTotal,
                       style: GoogleFonts.lato(
                         fontSize: 15.sp,
                         fontWeight: FontWeight.bold,
@@ -303,7 +310,7 @@ class MyOrdersView extends GetView<MyOrdersController> {
                 onPressed: () {
                   Get.snackbar(
                     'Order Info',
-                    'Viewing details for ${order['orderId']}',
+                    'Viewing details for ${order.orderId}',
                     snackPosition: SnackPosition.BOTTOM,
                   );
                 },

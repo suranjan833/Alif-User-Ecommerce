@@ -117,7 +117,7 @@ class SellerDetailsView extends GetView<SellerDetailsController> {
                               fontWeight: FontWeight.bold,
                               color: controller.isFollowing.value
                                   ? AppColor.textSecondary
-                                  : AppColor.textPrimary,
+                                  : Colors.white,
                             ),
                           ),
                         ),

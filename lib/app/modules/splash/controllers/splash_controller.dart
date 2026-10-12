@@ -1,6 +1,7 @@
 import 'package:flutter/animation.dart';
 import 'package:get/get.dart';
 
+import '../../../data/config/functions/dio_function/app_config.dart';
 import '../../../routes/app_pages.dart';
 
 class SplashController extends GetxController
@@ -8,9 +9,11 @@ class SplashController extends GetxController
   late AnimationController animationController;
   late Animation<double> logoScaleAnimation;
   late Animation<double> logoFadeAnimation;
-  late Animation<Offset> textSlideAnimation;
-  late Animation<double> textFadeAnimation;
+  late Animation<Offset> logoSlideAnimation;
+  late Animation<double> glowPulseAnimation;
+  late Animation<Offset> taglineSlideAnimation;
   late Animation<double> taglineFadeAnimation;
+  late Animation<double> bottomFadeAnimation;
 
   @override
   void onInit() {
@@ -25,7 +28,7 @@ class SplashController extends GetxController
       duration: const Duration(milliseconds: 2200),
     );
 
-    logoScaleAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+    logoScaleAnimation = Tween<double>(begin: 0.72, end: 1.0).animate(
       CurvedAnimation(
         parent: animationController,
         curve: const Interval(0.0, 0.55, curve: Curves.easeOutBack),
@@ -39,22 +42,41 @@ class SplashController extends GetxController
       ),
     );
 
-    textSlideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: animationController,
-            curve: const Interval(0.4, 0.8, curve: Curves.easeOutCubic),
-          ),
-        );
-
-    textFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    logoSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(
       CurvedAnimation(
         parent: animationController,
-        curve: const Interval(0.4, 0.75, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    glowPulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: animationController,
+        curve: const Interval(0.2, 0.7, curve: Curves.easeInOut),
+      ),
+    );
+
+    taglineSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.35),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: animationController,
+        curve: const Interval(0.45, 0.8, curve: Curves.easeOutCubic),
       ),
     );
 
     taglineFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: animationController,
+        curve: const Interval(0.45, 0.8, curve: Curves.easeIn),
+      ),
+    );
+
+    bottomFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: animationController,
         curve: const Interval(0.65, 1.0, curve: Curves.easeIn),
@@ -64,8 +86,13 @@ class SplashController extends GetxController
 
   void _startAnimationAndNavigate() async {
     await animationController.forward();
-    await Future.delayed(const Duration(milliseconds: 600));
-    Get.offNamed(Routes.ONBOARDING);
+    await Future.delayed(const Duration(milliseconds: 500));
+    final isLoggedIn = getBox.read(IS_USER_LOGGED_IN) == true;
+    if (isLoggedIn) {
+      Get.offAllNamed(Routes.MAIN_NAVIGATION);
+    } else {
+      Get.offNamed(Routes.LOGIN);
+    }
   }
 
   @override

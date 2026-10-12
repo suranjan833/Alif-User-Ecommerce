@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/config/app_image.dart';
 import '../controllers/splash_controller.dart';
 
 class SplashView extends GetView<SplashController> {
@@ -17,26 +18,38 @@ class SplashView extends GetView<SplashController> {
         children: [
           // Background ambient gradient circles
           Positioned(
-            top: -60.h,
-            right: -60.w,
+            top: -80.h,
+            right: -80.w,
             child: Container(
-              width: 200.w,
-              height: 200.h,
+              width: 240.w,
+              height: 240.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColor.primaryLight.withValues(alpha: 0.6),
+                gradient: RadialGradient(
+                  colors: [
+                    AppColor.primary.withValues(alpha: 0.18),
+                    AppColor.primaryLight.withValues(alpha: 0.05),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
           Positioned(
-            bottom: -80.h,
-            left: -80.w,
+            bottom: -90.h,
+            left: -90.w,
             child: Container(
-              width: 220.w,
-              height: 220.h,
+              width: 260.w,
+              height: 260.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColor.primaryLight.withValues(alpha: 0.4),
+                gradient: RadialGradient(
+                  colors: [
+                    AppColor.primary.withValues(alpha: 0.15),
+                    AppColor.primaryLight.withValues(alpha: 0.04),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
@@ -46,85 +59,49 @@ class SplashView extends GetView<SplashController> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animated Logo
+                // Animated Transparent Logo Image
                 FadeTransition(
                   opacity: controller.logoFadeAnimation,
-                  child: ScaleTransition(
-                    scale: controller.logoScaleAnimation,
-                    child: Container(
-                      width: 100.w,
-                      height: 100.w,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColor.primary, AppColor.primaryDark],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(26.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColor.primary.withValues(alpha: 0.35),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.shopping_bag_rounded,
-                          size: 52.sp,
-                          color: AppColor.white,
-                        ),
+                  child: SlideTransition(
+                    position: controller.logoSlideAnimation,
+                    child: ScaleTransition(
+                      scale: controller.logoScaleAnimation,
+                      child: Image.asset(
+                        AppImage.logo,
+                        width: 240.w,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
                 ),
                 SizedBox(height: 24.h),
 
-                // Animated App Name with Lato font
+                // Animated Tagline
                 SlideTransition(
-                  position: controller.textSlideAnimation,
+                  position: controller.taglineSlideAnimation,
                   child: FadeTransition(
-                    opacity: controller.textFadeAnimation,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                    opacity: controller.taglineFadeAnimation,
+                    child: Column(
                       children: [
                         Text(
-                          'ALIF',
+                          'Smart Shopping & Instant Delivery',
                           style: GoogleFonts.lato(
-                            fontSize: 34.sp,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 4.w,
-                            color: AppColor.textPrimary,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: AppColor.textSecondary,
                           ),
                         ),
+                        SizedBox(height: 6.h),
                         Container(
-                          width: 8.w,
-                          height: 8.w,
-                          margin: EdgeInsets.only(left: 4.w),
-                          decoration: const BoxDecoration(
+                          width: 36.w,
+                          height: 3.h,
+                          decoration: BoxDecoration(
                             color: AppColor.primary,
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(10.r),
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 8.h),
-
-                // Animated Tagline with Lato font
-                FadeTransition(
-                  opacity: controller.taglineFadeAnimation,
-                  child: Text(
-                    'Smart Shopping & Instant Delivery',
-                    style: GoogleFonts.lato(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.6,
-                      color: AppColor.textSecondary,
                     ),
                   ),
                 ),
@@ -138,12 +115,12 @@ class SplashView extends GetView<SplashController> {
             left: 0,
             right: 0,
             child: FadeTransition(
-              opacity: controller.taglineFadeAnimation,
+              opacity: controller.bottomFadeAnimation,
               child: Column(
                 children: [
                   SizedBox(
-                    width: 28.w,
-                    height: 28.w,
+                    width: 26.w,
+                    height: 26.w,
                     child: const CircularProgressIndicator(
                       strokeWidth: 2.5,
                       valueColor: AlwaysStoppedAnimation<Color>(
@@ -153,7 +130,7 @@ class SplashView extends GetView<SplashController> {
                   ),
                   SizedBox(height: 14.h),
                   Text(
-                    'v1.0.0',
+                    'v1.1.8',
                     style: GoogleFonts.lato(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w500,

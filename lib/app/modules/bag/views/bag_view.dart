@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../data/config/app_color.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../controllers/bag_controller.dart';
+import '../models/cart_model.dart';
 
 class BagView extends GetView<BagController> {
   const BagView({super.key});
@@ -205,14 +206,14 @@ class BagView extends GetView<BagController> {
                         icon: Icon(
                           Iconsax.card,
                           size: 18.r,
-                          color: AppColor.textPrimary,
+                          color: Colors.white,
                         ),
                         label: Text(
                           'Proceed to Checkout',
                           style: GoogleFonts.lato(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.bold,
-                            color: AppColor.textPrimary,
+                            color: Colors.white,
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -235,9 +236,9 @@ class BagView extends GetView<BagController> {
     );
   }
 
-  Widget _buildCartItemCard(Map<String, dynamic> item, int index) {
-    final price = item['price'] as double;
-    final qty = item['quantity'] as int;
+  Widget _buildCartItemCard(CartItemModel item, int index) {
+    final price = item.price;
+    final qty = item.quantity;
 
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
@@ -263,15 +264,21 @@ class BagView extends GetView<BagController> {
               color: const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Image.network(
-              item['image'] as String,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Iconsax.image,
-                size: 28.r,
-                color: AppColor.textSecondary,
-              ),
-            ),
+            child: item.image.isNotEmpty
+                ? Image.network(
+                    item.image,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Iconsax.image,
+                      size: 28.r,
+                      color: AppColor.textSecondary,
+                    ),
+                  )
+                : Icon(
+                    Iconsax.image,
+                    size: 28.r,
+                    color: AppColor.textSecondary,
+                  ),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -279,7 +286,7 @@ class BagView extends GetView<BagController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['brand'] as String,
+                  item.brand,
                   style: GoogleFonts.lato(
                     fontSize: 11.5.sp,
                     fontWeight: FontWeight.bold,
@@ -288,7 +295,7 @@ class BagView extends GetView<BagController> {
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  item['title'] as String,
+                  item.title,
                   style: GoogleFonts.lato(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.bold,

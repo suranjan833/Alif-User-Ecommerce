@@ -469,7 +469,7 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
                         style: GoogleFonts.lato(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
-                          color: AppColor.textPrimary,
+                          color: Colors.white,
                         ),
                       ),
                     ),

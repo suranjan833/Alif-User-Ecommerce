@@ -8,6 +8,7 @@ import '../../../data/config/app_color.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/category_products_controller.dart';
+import '../models/product_model.dart';
 
 class CategoryProductsView extends GetView<CategoryProductsController> {
   const CategoryProductsView({super.key});
@@ -414,11 +415,17 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
   // Product Card
   // ---------------------------------------------------------------------------
 
-  Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
-    final productId = product['id'] as String;
+  Widget _buildProductCard(BuildContext context, ProductModel product) {
+    final productId = product.id ?? '';
+    final imageUrl = product.image ?? 'https://images.unsplash.com/photo-1550525811-e5869dd03032?q=80&w=400&auto=format&fit=crop';
+    final title = product.title ?? 'Product';
+    final brand = product.brand ?? 'Brand';
+    final price = product.price;
+    final originalPrice = product.originalPrice ?? (price * 1.2);
+    final discount = product.discount ?? '15% OFF';
 
     return GestureDetector(
-      onTap: () => Get.toNamed(Routes.PRODUCT_DETAILS, arguments: product),
+      onTap: () => Get.toNamed(Routes.PRODUCT_DETAILS, arguments: product.toJson()),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -448,7 +455,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                     padding: EdgeInsets.all(10.r),
                     child: Center(
                       child: Image.network(
-                        product['image'] as String,
+                        imageUrl,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) => Icon(
                           Iconsax.image,
@@ -460,7 +467,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                   ),
 
                   // Top Left Badge (e.g. "2 Pack")
-                  if (product['badge'] != null)
+                  if (product.badge != null)
                     Positioned(
                       left: 8.w,
                       top: 8.h,
@@ -474,7 +481,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                           borderRadius: BorderRadius.circular(20.r),
                         ),
                         child: Text(
-                          product['badge'] as String,
+                          product.badge!,
                           style: GoogleFonts.inter(
                             fontSize: 9.sp,
                             fontWeight: FontWeight.w700,
@@ -550,7 +557,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                           child: Icon(
                             Icons.add_rounded,
                             size: 20.r,
-                            color: Colors.black,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -567,7 +574,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Discount Text (moved up as compact offer tag)
+                  // Discount Text
                   Row(
                     children: [
                       Icon(
@@ -577,7 +584,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                       ),
                       SizedBox(width: 3.w),
                       Text(
-                        product['discount'] as String,
+                        discount,
                         style: GoogleFonts.inter(
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w700,
@@ -590,7 +597,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
 
                   // Product Title
                   Text(
-                    product['title'] as String,
+                    title,
                     style: GoogleFonts.inter(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
@@ -605,7 +612,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
 
                   // Brand Name
                   Text(
-                    product['brand'] as String,
+                    brand,
                     style: GoogleFonts.inter(
                       fontSize: 10.5.sp,
                       fontWeight: FontWeight.w400,
@@ -616,28 +623,31 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                   ),
                   SizedBox(height: 6.h),
 
-                  // Price Row
-                  Row(
+                  // Price Row (Responsive Wrap to prevent overflow on large numbers)
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 5.w,
+                    runSpacing: 2.h,
                     children: [
                       Text(
-                        '₹${product['price']}',
+                        '₹${price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2)}',
                         style: GoogleFonts.inter(
-                          fontSize: 14.5.sp,
+                          fontSize: 13.5.sp,
                           fontWeight: FontWeight.w800,
                           color: AppColor.textPrimary,
                           letterSpacing: -0.3,
                         ),
                       ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        '₹${product['originalPrice']}',
-                        style: GoogleFonts.inter(
-                          fontSize: 10.5.sp,
-                          fontWeight: FontWeight.w400,
-                          color: AppColor.textHint,
-                          decoration: TextDecoration.lineThrough,
+                      if (originalPrice > price)
+                        Text(
+                          '₹${originalPrice.toStringAsFixed(originalPrice.truncateToDouble() == originalPrice ? 0 : 2)}',
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5.sp,
+                            fontWeight: FontWeight.w400,
+                            color: AppColor.textHint,
+                            decoration: TextDecoration.lineThrough,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],

@@ -472,8 +472,8 @@ class SkeletonChat extends StatelessWidget {
   }
 }
 
-/// Shimmering skeleton for the Home tab: location bar, search, banner,
-/// horizontal product rail and section headers.
+/// Shimmering skeleton for the Home tab: top app bar, mobile header banner,
+/// category navigation tabs bar, and product rail.
 class SkeletonHome extends StatelessWidget {
   const SkeletonHome({super.key});
 
@@ -482,67 +482,89 @@ class SkeletonHome extends StatelessWidget {
     return SkeletonShimmer(
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.only(bottom: 20.h),
+        padding: EdgeInsets.only(top: 8.h, bottom: 20.h),
         children: [
-          // Location bar
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
-            child: Row(
+          // Top Header Card (Logo, Icons, Search)
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16.w),
+            padding: EdgeInsets.all(14.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22.r),
+              border: Border.all(color: const Color(0xFFECEFF3)),
+            ),
+            child: Column(
               children: [
-                const SkeletonBox(width: 20, height: 20, circle: true),
-                SizedBox(width: 8.w),
-                SkeletonBox(width: 150.w, height: 13.h, radius: 6),
+                Row(
+                  children: [
+                    SkeletonBox(width: 80.w, height: 26.h, radius: 6),
+                    const Spacer(),
+                    const SkeletonBox(width: 24, height: 24, circle: true),
+                    SizedBox(width: 12.w),
+                    const SkeletonBox(width: 24, height: 24, circle: true),
+                    SizedBox(width: 12.w),
+                    SkeletonBox(width: 38.w, height: 22.h, radius: 8),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Container(
+                  height: 44.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F4F8),
+                    borderRadius: BorderRadius.circular(22.r),
+                  ),
+                ),
               ],
             ),
           ),
-          // Search bar
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: Container(
-              height: 46.h,
-              decoration: BoxDecoration(
-                color: const Color(0xFFECEFF3),
-                borderRadius: BorderRadius.circular(24.r),
-              ),
+
+          SizedBox(height: 12.h),
+
+          // Category Mobile Header Banner Shimmer Block
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16.w),
+            height: 220.h,
+            decoration: BoxDecoration(
+              color: const Color(0xFFECEFF3),
+              borderRadius: BorderRadius.circular(20.r),
             ),
           ),
-          SizedBox(height: 14.h),
-          // Category chips row
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
+
+          SizedBox(height: 12.h),
+
+          // Category Navigation Bar Shimmer Block
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16.w),
+            padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(color: const Color(0xFFECEFF3)),
+            ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(
-                4,
-                (index) => Padding(
-                  padding: EdgeInsets.only(right: 18.w),
-                  child: Column(
-                    children: [
-                      const SkeletonBox(width: 44, height: 44, circle: true),
-                      SizedBox(height: 6.h),
-                      SkeletonBox(width: 40.w, height: 9.h, radius: 4),
-                    ],
-                  ),
+                5,
+                (index) => Column(
+                  children: [
+                    const SkeletonBox(width: 44, height: 44, circle: true),
+                    SizedBox(height: 6.h),
+                    SkeletonBox(width: 42.w, height: 9.h, radius: 4),
+                  ],
                 ),
               ),
             ),
           ),
-          SizedBox(height: 16.h),
-          // Hero banner
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 16.w),
-            height: 200.h,
-            decoration: BoxDecoration(
-              color: const Color(0xFFECEFF3),
-              borderRadius: BorderRadius.circular(18.r),
-            ),
-          ),
+
           SizedBox(height: 20.h),
+
           // Section header
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: SkeletonBox(width: 160.w, height: 16.h, radius: 7),
           ),
           SizedBox(height: 12.h),
+
           // Product rail
           SizedBox(
             height: 240.h,
@@ -552,9 +574,7 @@ class SkeletonHome extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               itemCount: 3,
               separatorBuilder: (_, _) => SizedBox(width: 12.w),
-              // Explicit width: horizontal lists give children unbounded width,
-              // and the card's internal infinity-width bars would crash layout.
-              itemBuilder: (_, _) => _SkeletonCard(width: 150.w),
+              itemBuilder: (_, _) => _SkeletonCard(width: 160.w),
             ),
           ),
         ],
