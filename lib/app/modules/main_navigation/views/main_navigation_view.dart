@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../../account/views/account_view.dart';
+import '../../bag/controllers/bag_controller.dart';
 import '../../bag/views/bag_view.dart';
 import '../../categories/views/categories_view.dart';
 import '../../discover/views/discover_view.dart';
@@ -104,6 +105,68 @@ class MainNavigationView extends GetView<MainNavigationController> {
       final activeColor = AppColor.textPrimary;
       final inactiveColor = AppColor.textSecondary;
 
+      Widget iconWidget = Icon(
+        isSelected ? activeIcon : inactiveIcon,
+        color: isSelected ? activeColor : inactiveColor,
+        size: 24.r,
+      );
+
+      // If Bag tab (index 3), show live cart count badge
+      if (index == 3) {
+        if (!Get.isRegistered<BagController>()) {
+          Get.put(BagController());
+        }
+        final bagCtrl = Get.find<BagController>();
+        final count = bagCtrl.totalItemCount;
+
+        if (count > 0) {
+          iconWidget = Stack(
+            clipBehavior: Clip.none,
+            children: [
+              iconWidget,
+              Positioned(
+                top: -5.h,
+                right: -8.w,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: count > 9 ? 4.5.w : 5.w,
+                    vertical: 1.5.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5A00),
+                    shape: count > 9 ? BoxShape.rectangle : BoxShape.circle,
+                    borderRadius: count > 9 ? BorderRadius.circular(10.r) : null,
+                    border: Border.all(color: Colors.white, width: 1.5.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF5A00).withValues(alpha: 0.35),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  constraints: BoxConstraints(
+                    minWidth: 16.r,
+                    minHeight: 16.r,
+                  ),
+                  child: Center(
+                    child: Text(
+                      count > 99 ? '99+' : count.toString(),
+                      style: GoogleFonts.inter(
+                        fontSize: 9.5.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+      }
+
       return Expanded(
         child: InkWell(
           onTap: () => controller.changeTab(index),
@@ -112,11 +175,7 @@ class MainNavigationView extends GetView<MainNavigationController> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isSelected ? activeIcon : inactiveIcon,
-                color: isSelected ? activeColor : inactiveColor,
-                size: 24.r,
-              ),
+              iconWidget,
               SizedBox(height: 4.h),
               Text(
                 label,

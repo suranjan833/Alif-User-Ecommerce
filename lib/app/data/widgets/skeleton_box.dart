@@ -558,14 +558,48 @@ class SkeletonHome extends StatelessWidget {
 
           SizedBox(height: 20.h),
 
-          // Section header
+          // Section header 1
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: SkeletonBox(width: 160.w, height: 16.h, radius: 7),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SkeletonBox(width: 170.w, height: 16.h, radius: 7),
+                SkeletonBox(width: 48.w, height: 12.h, radius: 5),
+              ],
+            ),
           ),
           SizedBox(height: 12.h),
 
-          // Product rail
+          // Product rail 1
+          SizedBox(
+            height: 240.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              itemCount: 3,
+              separatorBuilder: (_, _) => SizedBox(width: 12.w),
+              itemBuilder: (_, _) => _SkeletonCard(width: 160.w),
+            ),
+          ),
+
+          SizedBox(height: 22.h),
+
+          // Section header 2
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SkeletonBox(width: 150.w, height: 16.h, radius: 7),
+                SkeletonBox(width: 48.w, height: 12.h, radius: 5),
+              ],
+            ),
+          ),
+          SizedBox(height: 12.h),
+
+          // Product rail 2
           SizedBox(
             height: 240.h,
             child: ListView.separated(

@@ -488,6 +488,29 @@ class CheckoutView extends GetView<CheckoutController> {
                               color: AppColor.textPrimary,
                             ),
                           ),
+                          const Divider(color: Color(0xFFF1F5F9), height: 16),
+
+                          // Wallet Option
+                          _buildPaymentMethodTile(
+                            id: 'Wallet',
+                            title: 'Alif Wallet',
+                            subtitle: 'Pay using your account balance',
+                            iconWidget: Container(
+                              width: 32.r,
+                              height: 32.r,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6366F1),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                         ),
                       ),
@@ -599,7 +622,9 @@ class CheckoutView extends GetView<CheckoutController> {
                     height: 48.h,
                     child: Obx(
                       () => ElevatedButton(
-                        onPressed: () => controller.placeOrder(),
+                        onPressed: controller.isProcessingPayment.value
+                            ? null
+                            : () => controller.placeOrder(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               controller.selectedPaymentMethod.value == 'bKash'
@@ -607,26 +632,41 @@ class CheckoutView extends GetView<CheckoutController> {
                                   : (controller.selectedPaymentMethod.value ==
                                           'Nagad'
                                       ? const Color(0xFFF7941D)
-                                      : AppColor.primary),
+                                      : (controller.selectedPaymentMethod.value ==
+                                              'Wallet'
+                                          ? const Color(0xFF6366F1)
+                                          : AppColor.primary)),
                           elevation: 0,
                           padding: EdgeInsets.symmetric(horizontal: 24.w),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14.r),
                           ),
                         ),
-                        child: Text(
-                          controller.selectedPaymentMethod.value == 'bKash'
-                              ? 'Pay with bKash'
-                              : (controller.selectedPaymentMethod.value ==
-                                      'Nagad'
-                                  ? 'Pay with Nagad'
-                                  : 'Place Order (COD)'),
-                          style: GoogleFonts.lato(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: controller.isProcessingPayment.value
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.2,
+                                ),
+                              )
+                            : Text(
+                                controller.selectedPaymentMethod.value == 'bKash'
+                                    ? 'Pay with bKash'
+                                    : (controller.selectedPaymentMethod.value ==
+                                            'Nagad'
+                                        ? 'Pay with Nagad'
+                                        : (controller.selectedPaymentMethod.value ==
+                                                'Wallet'
+                                            ? 'Pay with Wallet'
+                                            : 'Place Order (COD)')),
+                                style: GoogleFonts.lato(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ),

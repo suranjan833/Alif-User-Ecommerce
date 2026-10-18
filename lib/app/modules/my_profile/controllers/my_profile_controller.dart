@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/config/functions/dio_function/app_config.dart';
 
 class MyProfileController extends GetxController {
   late TextEditingController nameController;
@@ -20,6 +21,18 @@ class MyProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final savedName = getBox.read(USER_NAME);
+    if (savedName != null && savedName.toString().trim().isNotEmpty) {
+      userName.value = savedName.toString().trim();
+    }
+    final savedEmail = getBox.read(USER_EMAIL);
+    if (savedEmail != null && savedEmail.toString().trim().isNotEmpty) {
+      userEmail.value = savedEmail.toString().trim();
+    }
+    final savedPhone = getBox.read(USER_PHONE);
+    if (savedPhone != null && savedPhone.toString().trim().isNotEmpty) {
+      userPhone.value = savedPhone.toString().trim();
+    }
     nameController = TextEditingController(text: userName.value);
     emailController = TextEditingController(text: userEmail.value);
     phoneController = TextEditingController(text: userPhone.value);
@@ -103,6 +116,10 @@ class MyProfileController extends GetxController {
       userName.value = nameController.text.trim();
       userEmail.value = emailController.text.trim();
       userPhone.value = phoneController.text.trim();
+
+      getBox.write(USER_NAME, userName.value);
+      getBox.write(USER_EMAIL, userEmail.value);
+      getBox.write(USER_PHONE, userPhone.value);
 
       Get.snackbar(
         'Success',

@@ -1,6 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../data/config/app_color.dart';
+import '../../../data/config/functions/dio_function/app_config.dart';
 import '../../../data/config/functions/dio_function/my_dio.dart';
+import '../../bag/controllers/bag_controller.dart';
 import '../models/product_model.dart';
 
 class CategoryProductsController extends GetxController {
@@ -66,6 +70,7 @@ class CategoryProductsController extends GetxController {
       if (!isBrandView && subCategories.length <= 1 && categorySlug.value.isNotEmpty) {
         await _fetchSubCategoriesFromApi();
       }
+      await _syncWishlistFromApi();
       await _loadProductsForSelected();
     } finally {
       isLoading.value = false;
@@ -271,19 +276,85 @@ class CategoryProductsController extends GetxController {
     }
   }
 
-  void toggleWishlist(String productId) {
-    if (wishlistedProductIds.contains(productId)) {
-      wishlistedProductIds.remove(productId);
-    } else {
+  Future<void> _syncWishlistFromApi() async {
+    final token = getBox.read(USER_TOKEN);
+    if (token == null || token.toString().isEmpty) return;
+    try {
+      final response = await dioGet('wishlist');
+      if (response.statusCode == 200 && response.data != null) {
+        dynamic raw = response.data;
+        if (raw is Map && raw.containsKey('data')) raw = raw['data'];
+        if (raw is List) {
+          final ids = <String>{};
+          for (var item in raw) {
+            if (item is Map) {
+              if (item['productId'] != null) ids.add(item['productId'].toString());
+              if (item['variantId'] != null) ids.add(item['variantId'].toString());
+              if (item['product'] is Map && item['product']['id'] != null) {
+                ids.add(item['product']['id'].toString());
+              }
+            }
+          }
+          if (ids.isNotEmpty) {
+            wishlistedProductIds.addAll(ids);
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> toggleWishlist(String productId, [String? variantId]) async {
+    final vId = (variantId != null && variantId.isNotEmpty) ? variantId : productId;
+    final isAdding = !wishlistedProductIds.contains(productId);
+    if (isAdding) {
       wishlistedProductIds.add(productId);
+    } else {
+      wishlistedProductIds.remove(productId);
+    }
+
+    final token = getBox.read(USER_TOKEN);
+    if (token != null && token.toString().isNotEmpty) {
+      try {
+        if (isAdding) {
+          await dioPost(
+            endUrl: 'wishlist',
+            data: {'variantId': vId},
+            isJson: true,
+          );
+        } else {
+          await dioDelete('wishlist?variantId=$vId');
+        }
+      } catch (_) {}
     }
   }
 
   void addToCart(ProductModel product) {
+    if (!Get.isRegistered<BagController>()) {
+      Get.put(BagController());
+    }
+    final bagCtrl = Get.find<BagController>();
+
+    final vId = (product.variants != null && product.variants!.isNotEmpty)
+        ? product.variants!.first['id']?.toString()
+        : null;
+
+    bagCtrl.addItemToBag({
+      'id': product.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      'productId': product.id ?? '',
+      'variantId': vId,
+      'variants': product.variants,
+      'title': product.title ?? 'Product',
+      'price': product.price,
+      'image': product.image ?? '',
+      'brand': product.brand ?? 'Alif',
+    });
+
     Get.snackbar(
       'Added to Bag',
       '${product.title ?? "Item"} added to bag',
       snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColor.primary,
+      colorText: Colors.white,
       duration: const Duration(seconds: 2),
     );
   }

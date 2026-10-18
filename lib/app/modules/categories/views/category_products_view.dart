@@ -8,6 +8,7 @@ import '../../../data/config/app_color.dart';
 import '../../../data/widgets/brand_logo_widget.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../../../routes/app_pages.dart';
+import '../../bag/controllers/bag_controller.dart';
 import '../controllers/category_products_controller.dart';
 import '../models/product_model.dart';
 
@@ -218,7 +219,59 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
       actions: [
         _buildCircularAction(icon: Iconsax.search_normal_1, onTap: () {}),
         SizedBox(width: 6.w),
-        _buildCircularAction(icon: Iconsax.shopping_bag, onTap: () {}),
+        Obx(() {
+          if (!Get.isRegistered<BagController>()) {
+            Get.put(BagController());
+          }
+          final bagCtrl = Get.find<BagController>();
+          final count = bagCtrl.totalItemCount;
+
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _buildCircularAction(
+                icon: Iconsax.shopping_bag,
+                onTap: () => Get.toNamed(Routes.BAG),
+              ),
+              if (count > 0)
+                Positioned(
+                  top: -2.h,
+                  right: -2.w,
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: count > 9 ? 3.5.w : 4.5.w,
+                        vertical: 1.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5A00),
+                        shape:
+                            count > 9 ? BoxShape.rectangle : BoxShape.circle,
+                        borderRadius:
+                            count > 9 ? BorderRadius.circular(10.r) : null,
+                        border: Border.all(color: Colors.white, width: 1.5.r),
+                      ),
+                      constraints: BoxConstraints(
+                        minWidth: 16.r,
+                        minHeight: 16.r,
+                      ),
+                      child: Center(
+                        child: Text(
+                          count > 99 ? '99+' : count.toString(),
+                          style: GoogleFonts.inter(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }),
         SizedBox(width: 12.w),
       ],
     );

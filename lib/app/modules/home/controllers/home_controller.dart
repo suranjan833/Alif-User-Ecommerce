@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../data/config/functions/dio_function/app_config.dart';
 import '../../../data/config/functions/dio_function/my_dio.dart';
 import '../../../data/mixins/skeleton_loading_mixin.dart';
 import '../models/home_category_model.dart';
@@ -28,11 +29,8 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
   Future<void> loadHomeData() async {
     isLoading.value = true;
     try {
-      await Future.wait([
-        fetchCategories(),
-        fetchShowcase(),
-        fetchBrands(),
-      ]);
+      await fetchCategories();
+      await fetchShowcase();
     } finally {
       isLoading.value = false;
     }
@@ -56,8 +54,13 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
         }
 
         if (categoryList != null && categoryList.isNotEmpty) {
+          final allIcon = showcase.value?.fullAllCategoryIconUrl;
           final dynCats = <HomeCategoryModel>[
-            categories.first, // Keep "All" at index 0
+            categories.first.copyWith(
+              imageUrl: (allIcon != null && allIcon.isNotEmpty)
+                  ? allIcon
+                  : categories.first.imageUrl,
+            ),
           ];
 
           for (int i = 0; i < categoryList.length; i++) {
@@ -86,10 +89,18 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
     } catch (_) {}
   }
 
-  /// 2. GET /catalog/showcase
-  Future<void> fetchShowcase() async {
+  /// 2. GET /catalog/showcase or GET /catalog/showcase?category=`<slug>`
+  Future<void> fetchShowcase([String? categorySlug]) async {
+    isCategoryProductsLoading.value = true;
     try {
-      final response = await dioGet('catalog/showcase');
+      final isAll = categorySlug == null ||
+          categorySlug.isEmpty ||
+          categorySlug.toLowerCase() == 'all';
+      final endpoint = isAll
+          ? 'catalog/showcase'
+          : 'catalog/showcase?category=$categorySlug';
+
+      final response = await dioGet(endpoint);
       if (response.statusCode == 200 && response.data != null) {
         dynamic rawData = response.data;
         if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
@@ -99,67 +110,94 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
           final model = ShowcaseModel.fromJson(rawData);
           showcase.value = model;
 
-          // Merge live brands
+          // Update brands for current showcase
           if (model.brands.isNotEmpty) {
-            for (var b in model.brands) {
-              if (b.name.isNotEmpty) {
-                final logoUrl = b.logoUrl.startsWith('http')
-                    ? b.logoUrl
-                    : 'https://alifworld.vercel.app${b.logoUrl}';
-                final alreadyHas =
-                    topBrands.any((element) => element['name'] == b.name);
-                if (!alreadyHas) {
-                  topBrands.insert(0, {'name': b.name, 'logo': logoUrl});
+            topBrands.assignAll(model.brands.map((b) => {
+                  'name': b.name,
+                  'logo': b.fullLogoUrl,
+                  'slug': b.slug,
+                }).toList());
+          }
+
+          // Update mobile header background if provided by showcase
+          final fullMob = model.fullHeaderBgMobileUrl;
+          if (fullMob.isNotEmpty) {
+            final idx = selectedCategoryIndex.value;
+            if (idx >= 0 && idx < categories.length) {
+              categories[idx] = categories[idx].copyWith(
+                headerBgMobileUrl: fullMob,
+              );
+            }
+          }
+
+          // Update "All" category icon if provided by showcase
+          if (model.fullAllCategoryIconUrl.isNotEmpty && categories.isNotEmpty) {
+            categories[0] = categories[0].copyWith(
+              imageUrl: model.fullAllCategoryIconUrl,
+            );
+          }
+
+          // Populate or update categories dynamically from showcase
+          if (model.rawCategories.isNotEmpty) {
+            if (categories.length <= 1) {
+              final dynCats = <HomeCategoryModel>[
+                categories.first,
+              ];
+              for (int i = 0; i < model.rawCategories.length; i++) {
+                final rawCat = model.rawCategories[i];
+                final catId = rawCat['id']?.toString() ?? '';
+                final catName = rawCat['name']?.toString() ?? '';
+                final catSlug = rawCat['slug']?.toString() ?? '';
+                final rawImg = rawCat['imageUrl']?.toString();
+                if (catName.isNotEmpty) {
+                  dynCats.add(HomeCategoryModel.fromApiCategory(
+                    id: catId,
+                    name: catName,
+                    slug: catSlug,
+                    imageUrl: rawImg,
+                    index: i + 1,
+                  ));
+                }
+              }
+              categories.assignAll(dynCats);
+            } else {
+              for (var rawCat in model.rawCategories) {
+                final slug = rawCat['slug']?.toString() ?? '';
+                final rawImg = rawCat['imageUrl']?.toString();
+                if (slug.isNotEmpty && rawImg != null && rawImg.isNotEmpty) {
+                  final fullImg = rawImg.startsWith('http')
+                      ? rawImg
+                      : 'https://alifworld.vercel.app$rawImg';
+                  final catIdx = categories.indexWhere((c) => c.slug == slug);
+                  if (catIdx != -1) {
+                    categories[catIdx] =
+                        categories[catIdx].copyWith(imageUrl: fullImg);
+                  }
                 }
               }
             }
           }
 
-          // Update "All" category mobile header background if provided by showcase
-          if (rawData['allCategoryHeaderBg'] is Map) {
-            final allBg = rawData['allCategoryHeaderBg'] as Map;
-            final mob = allBg['mobileUrl']?.toString();
-            if (mob != null && mob.isNotEmpty) {
-              final fullMob = mob.startsWith('http')
-                  ? mob
-                  : 'https://alifworld.vercel.app$mob';
-              if (categories.isNotEmpty && categories.first.id == 'all') {
-                categories[0] = HomeCategoryModel(
-                  id: categories[0].id,
-                  name: categories[0].name,
-                  slug: categories[0].slug,
-                  icon: categories[0].icon,
-                  searchHint: categories[0].searchHint,
-                  bannerTitle: categories[0].bannerTitle,
-                  bannerSubtitle: categories[0].bannerSubtitle,
-                  bannerImage: categories[0].bannerImage,
-                  headerBgMobileUrl: fullMob,
-                  imageUrl: categories[0].imageUrl,
-                  bgColor: categories[0].bgColor,
-                  accentColor: categories[0].accentColor,
-                  buttonColor: categories[0].buttonColor,
-                  subtitleColor: categories[0].subtitleColor,
-                  isScriptSubtitle: categories[0].isScriptSubtitle,
-                  products: categories[0].products,
-                );
-              }
-            }
-          }
-
-          // Populate live products into "All" category
+          // Populate live products across rails into current category
           final liveProducts = <Map<String, dynamic>>[];
           for (var rail in model.rails) {
             for (var prod in rail.products) {
               liveProducts.add(prod.toDetailsMap());
             }
           }
-          if (liveProducts.isNotEmpty) {
-            categories[0].products = liveProducts;
-            categories.refresh();
+          final idx = selectedCategoryIndex.value;
+          if (idx >= 0 && idx < categories.length) {
+            categories[idx].products = liveProducts;
           }
+          categories.refresh();
         }
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      isCategoryProductsLoading.value = false;
+      categories.refresh();
+      selectedCategoryIndex.refresh();
+    }
   }
 
   /// 3. GET /catalog/brands
@@ -244,59 +282,46 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
   }
 
   void selectCategory(int index) {
+    if (index < 0 || index >= categories.length) return;
     selectedCategoryIndex.value = index;
-    if (index > 0 && index < categories.length && categories[index].products.isEmpty) {
-      fetchCategoryProducts(index);
-    }
-  }
-
-  Future<void> fetchCategoryProducts(int index) async {
     final cat = categories[index];
-    if (cat.slug.isEmpty || cat.slug == 'all') return;
-    isCategoryProductsLoading.value = true;
-    try {
-      final response = await dioGet('catalog/search?category=${cat.slug}');
-      if (response.statusCode == 200 && response.data != null) {
-        dynamic rawData = response.data;
-        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
-          rawData = rawData['data'];
-        }
-        List? prods;
-        if (rawData is Map<String, dynamic> && rawData.containsKey('products')) {
-          prods = rawData['products'] as List?;
-        } else if (rawData is List) {
-          prods = rawData;
-        }
-        if (prods != null) {
-          final liveList = <Map<String, dynamic>>[];
-          for (var p in prods) {
-            if (p is Map<String, dynamic>) {
-              final prodModel = ShowcaseProductModel.fromJson(p);
-              liveList.add(prodModel.toDetailsMap());
-            }
-          }
-          categories[index].products = liveList;
-        } else {
-          categories[index].products = [];
-        }
-      } else {
-        categories[index].products = [];
-      }
-    } catch (_) {
-      categories[index].products = [];
-    } finally {
-      isCategoryProductsLoading.value = false;
-      categories.refresh();
-      selectedCategoryIndex.refresh();
-    }
+    final slug = (cat.slug == 'all' || cat.slug.isEmpty) ? '' : cat.slug;
+    fetchShowcase(slug);
   }
 
-  void toggleFavorite(int productIndex) {
+  Future<void> toggleFavorite(int productIndex) async {
     final products = currentCategory.products;
     if (productIndex >= 0 && productIndex < products.length) {
-      products[productIndex]['isFavorite'] =
-          !(products[productIndex]['isFavorite'] as bool);
+      final isFav = !(products[productIndex]['isFavorite'] as bool? ?? false);
+      products[productIndex]['isFavorite'] = isFav;
       selectedCategoryIndex.refresh();
+
+      final prod = products[productIndex];
+      String vId = '';
+      if (prod['variants'] is List && (prod['variants'] as List).isNotEmpty) {
+        final fv = (prod['variants'] as List).first;
+        if (fv is Map && fv['id'] != null) {
+          vId = fv['id'].toString();
+        }
+      }
+      if (vId.isEmpty) {
+        vId = prod['variantId']?.toString() ?? prod['id']?.toString() ?? '';
+      }
+
+      final token = getBox.read(USER_TOKEN);
+      if (token != null && token.toString().isNotEmpty && vId.isNotEmpty) {
+        try {
+          if (isFav) {
+            await dioPost(
+              endUrl: 'wishlist',
+              data: {'variantId': vId},
+              isJson: true,
+            );
+          } else {
+            await dioDelete('wishlist?variantId=$vId');
+          }
+        } catch (_) {}
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/config/functions/dio_function/app_config.dart';
 import '../../../data/mixins/skeleton_loading_mixin.dart';
 import '../../../data/services/app_translations.dart';
 import '../../../routes/app_pages.dart';
@@ -41,10 +42,26 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
   @override
   void onInit() {
     super.onInit();
+    _loadUserData();
     // Defer so the shimmer is visible when the tab is first opened.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       initSkeletonLoading();
     });
+  }
+
+  void _loadUserData() {
+    final savedName = getBox.read(USER_NAME);
+    if (savedName != null && savedName.toString().trim().isNotEmpty) {
+      userName.value = savedName.toString().trim();
+    }
+    final savedEmail = getBox.read(USER_EMAIL);
+    if (savedEmail != null && savedEmail.toString().trim().isNotEmpty) {
+      userEmail.value = savedEmail.toString().trim();
+    }
+    final savedPhone = getBox.read(USER_PHONE);
+    if (savedPhone != null && savedPhone.toString().trim().isNotEmpty) {
+      userPhone.value = savedPhone.toString().trim();
+    }
   }
 
   List<AccountSectionData> get sections => [
@@ -489,12 +506,15 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
                   onPressed: () {
                     if (nameController.text.trim().isNotEmpty) {
                       userName.value = nameController.text.trim();
+                      getBox.write(USER_NAME, userName.value);
                     }
                     if (emailController.text.trim().isNotEmpty) {
                       userEmail.value = emailController.text.trim();
+                      getBox.write(USER_EMAIL, userEmail.value);
                     }
                     if (phoneController.text.trim().isNotEmpty) {
                       userPhone.value = phoneController.text.trim();
+                      getBox.write(USER_PHONE, userPhone.value);
                     }
                     Get.back();
                     Get.snackbar(
@@ -597,6 +617,13 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
+                        getBox.remove(USER_TOKEN);
+                        getBox.remove(IS_USER_LOGGED_IN);
+                        getBox.remove(USER_ID);
+                        getBox.remove(USER_NAME);
+                        getBox.remove(USER_EMAIL);
+                        getBox.remove(USER_PHONE);
+                        getBox.remove(USER_LOGIN);
                         Get.back();
                         Get.offAllNamed(Routes.LOGIN);
                       },

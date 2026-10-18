@@ -54,74 +54,84 @@ class BagView extends GetView<BagController> {
           return const SkeletonCart();
         }
         if (controller.cartItems.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 80.r,
-                    height: 80.r,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFFF7E6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Iconsax.shopping_bag,
-                        size: 42.r,
-                        color: AppColor.primaryDark,
-                      ),
+          return RefreshIndicator(
+            color: AppColor.primary,
+            onRefresh: () => controller.fetchCart(showLoading: false),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: 0.75.sh,
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 80.r,
+                          height: 80.r,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFF7E6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Iconsax.shopping_bag,
+                              size: 42.r,
+                              color: AppColor.primaryDark,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          'Your Shopping Bag is Empty',
+                          style: GoogleFonts.lato(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColor.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 6.h),
+                        Text(
+                          'Explore products and add them to your bag',
+                          style: GoogleFonts.lato(
+                            fontSize: 13.5.sp,
+                            color: AppColor.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 20.h),
+                        ElevatedButton.icon(
+                          onPressed: () => Get.toNamed(Routes.HOME),
+                          icon: Icon(
+                            Iconsax.shop,
+                            size: 18.r,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            'Explore Products',
+                            style: GoogleFonts.lato(
+                              fontSize: 14.5.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColor.primary,
+                            elevation: 0,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 24.w,
+                              vertical: 12.h,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'Your Shopping Bag is Empty',
-                    style: GoogleFonts.lato(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColor.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 6.h),
-                  Text(
-                    'Explore products and add them to your bag',
-                    style: GoogleFonts.lato(
-                      fontSize: 13.5.sp,
-                      color: AppColor.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 20.h),
-                  ElevatedButton.icon(
-                    onPressed: () => Get.toNamed(Routes.HOME),
-                    icon: Icon(
-                      Iconsax.shop,
-                      size: 18.r,
-                      color: Colors.white,
-                    ),
-                    label: Text(
-                      'Explore Products',
-                      style: GoogleFonts.lato(
-                        fontSize: 14.5.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.primary,
-                      elevation: 0,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 24.w,
-                        vertical: 12.h,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           );
@@ -130,18 +140,21 @@ class BagView extends GetView<BagController> {
         return Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Cart Items List
-                    ...List.generate(controller.cartItems.length, (index) {
-                      final item = controller.cartItems[index];
-                      return _buildCartItemCard(item, index);
-                    }),
-                    SizedBox(height: 12.h),
+              child: RefreshIndicator(
+                color: AppColor.primary,
+                onRefresh: () => controller.fetchCart(showLoading: false),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cart Items List
+                      ...List.generate(controller.cartItems.length, (index) {
+                        final item = controller.cartItems[index];
+                        return _buildCartItemCard(item, index);
+                      }),
+                      SizedBox(height: 12.h),
 
                     // Order Price Summary Card
                     Container(
@@ -196,6 +209,7 @@ class BagView extends GetView<BagController> {
                 ),
               ),
             ),
+          ),
 
             // Bottom Sticky Checkout Bar
             Container(

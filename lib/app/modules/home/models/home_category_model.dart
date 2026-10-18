@@ -37,6 +37,57 @@ class HomeCategoryModel {
     this.products = const [],
   });
 
+  String get fullImageUrl {
+    if (imageUrl == null || imageUrl!.isEmpty) return '';
+    if (imageUrl!.startsWith('http://') || imageUrl!.startsWith('https://')) {
+      return imageUrl!;
+    }
+    return 'https://alifworld.vercel.app$imageUrl';
+  }
+
+  bool get isSvgIcon {
+    final url = fullImageUrl.toLowerCase();
+    return url.endsWith('.svg') || url.contains('.svg?');
+  }
+
+  HomeCategoryModel copyWith({
+    String? id,
+    String? name,
+    String? slug,
+    String? icon,
+    String? searchHint,
+    String? bannerTitle,
+    String? bannerSubtitle,
+    String? bannerImage,
+    String? headerBgMobileUrl,
+    String? imageUrl,
+    Color? bgColor,
+    Color? accentColor,
+    Color? buttonColor,
+    Color? subtitleColor,
+    bool? isScriptSubtitle,
+    List<Map<String, dynamic>>? products,
+  }) {
+    return HomeCategoryModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      slug: slug ?? this.slug,
+      icon: icon ?? this.icon,
+      searchHint: searchHint ?? this.searchHint,
+      bannerTitle: bannerTitle ?? this.bannerTitle,
+      bannerSubtitle: bannerSubtitle ?? this.bannerSubtitle,
+      bannerImage: bannerImage ?? this.bannerImage,
+      headerBgMobileUrl: headerBgMobileUrl ?? this.headerBgMobileUrl,
+      imageUrl: imageUrl ?? this.imageUrl,
+      bgColor: bgColor ?? this.bgColor,
+      accentColor: accentColor ?? this.accentColor,
+      buttonColor: buttonColor ?? this.buttonColor,
+      subtitleColor: subtitleColor ?? this.subtitleColor,
+      isScriptSubtitle: isScriptSubtitle ?? this.isScriptSubtitle,
+      products: products ?? this.products,
+    );
+  }
+
   factory HomeCategoryModel.fromApiCategory({
     required String id,
     required String name,

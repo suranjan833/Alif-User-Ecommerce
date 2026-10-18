@@ -1,7 +1,11 @@
+// ignore_for_file: library_prefixes
+
+import 'package:dio/dio.dart' as DIO;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/config/functions/dio_function/app_config.dart';
 import '../../../data/config/functions/dio_function/my_dio.dart';
 import '../../../data/mixins/skeleton_loading_mixin.dart';
 import '../../../routes/app_pages.dart';
@@ -10,45 +14,79 @@ import '../models/cart_model.dart';
 class BagController extends GetxController with SkeletonLoadingMixin {
   final cartItems = <CartItemModel>[].obs;
 
+  bool get _hasAuth {
+    final token = getBox.read(USER_TOKEN);
+    final sessionCookie = getBox.read('SESSION_COOKIE');
+    return (token != null && token.toString().trim().isNotEmpty) ||
+        (sessionCookie != null && sessionCookie.toString().trim().isNotEmpty);
+  }
+
   @override
   void onInit() {
     super.onInit();
+    if (!_hasAuth) {
+      isLoading.value = false;
+    } else {
+      isLoading.value = true;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       fetchCart();
     });
   }
 
   /// 1. GET /cart - Fetch user's cart from API
-  Future<void> fetchCart() async {
-    initSkeletonLoading();
+  Future<void> fetchCart({bool showLoading = true}) async {
+    if (showLoading && cartItems.isEmpty) {
+      isLoading.value = true;
+    }
+
+    if (!_hasAuth) {
+      isLoading.value = false;
+      return;
+    }
+
     try {
-      final response = await dioGet('cart');
+      final response = await dioGet('cart').timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => DIO.Response(
+          requestOptions: DIO.RequestOptions(path: 'cart'),
+          statusCode: 408,
+          data: {'message': 'Request timed out'},
+        ),
+      );
+
       if (response.statusCode == 200 && response.data != null) {
         dynamic rawData = response.data;
-        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+        if (rawData is Map && rawData.containsKey('data')) {
           rawData = rawData['data'];
         }
-        if (rawData is Map<String, dynamic>) {
-          final cartModel = CartModel.fromJson(rawData);
+        if (rawData is Map) {
+          final cartModel =
+              CartModel.fromJson(Map<String, dynamic>.from(rawData));
           cartItems.assignAll(cartModel.items);
         } else if (rawData is List) {
-          cartItems.assignAll(
-            rawData
-                .whereType<Map<String, dynamic>>()
-                .map((e) => CartItemModel.fromJson(e))
-                .toList(),
-          );
-        } else {
-          cartItems.clear();
+          final items = <CartItemModel>[];
+          for (var e in rawData) {
+            if (e is Map) {
+              items.add(CartItemModel.fromJson(Map<String, dynamic>.from(e)));
+            }
+          }
+          cartItems.assignAll(items);
         }
-      } else {
-        cartItems.clear();
       }
     } catch (_) {
-      cartItems.clear();
     } finally {
       isLoading.value = false;
     }
+  }
+
+  int get totalItemCount {
+    int total = 0;
+    for (var item in cartItems) {
+      total += item.quantity;
+    }
+    return total;
   }
 
   double get subtotal {
@@ -70,13 +108,15 @@ class BagController extends GetxController with SkeletonLoadingMixin {
     item.quantity = newQty;
     cartItems.refresh();
 
-    try {
-      await dioPatch(
-        endUrl: 'cart/items/${item.id}',
-        data: {'qty': newQty},
-        isJson: true,
-      );
-    } catch (_) {}
+    if (_hasAuth) {
+      try {
+        await dioPatch(
+          endUrl: 'cart/items/${item.id}',
+          data: {'qty': newQty},
+          isJson: true,
+        );
+      } catch (_) {}
+    }
   }
 
   /// 3. PATCH /cart/items/{id} - Decrement quantity
@@ -88,13 +128,15 @@ class BagController extends GetxController with SkeletonLoadingMixin {
       item.quantity = newQty;
       cartItems.refresh();
 
-      try {
-        await dioPatch(
-          endUrl: 'cart/items/${item.id}',
-          data: {'qty': newQty},
-          isJson: true,
-        );
-      } catch (_) {}
+      if (_hasAuth) {
+        try {
+          await dioPatch(
+            endUrl: 'cart/items/${item.id}',
+            data: {'qty': newQty},
+            isJson: true,
+          );
+        } catch (_) {}
+      }
     } else {
       removeItem(index);
     }
@@ -112,9 +154,11 @@ class BagController extends GetxController with SkeletonLoadingMixin {
       duration: const Duration(seconds: 2),
     );
 
-    try {
-      await dioDelete('cart/items/${removed.id}');
-    } catch (_) {}
+    if (_hasAuth) {
+      try {
+        await dioDelete('cart/items/${removed.id}');
+      } catch (_) {}
+    }
   }
 
   /// 5. POST /cart - Add item to bag
@@ -122,11 +166,22 @@ class BagController extends GetxController with SkeletonLoadingMixin {
     final prodId = item['productId']?.toString() ??
         item['id']?.toString() ??
         DateTime.now().millisecondsSinceEpoch.toString();
-    final variantId = item['variantId']?.toString();
+
+    String? variantId = item['variantId']?.toString();
+    if (variantId == null || variantId.isEmpty) {
+      if (item['variants'] is List && (item['variants'] as List).isNotEmpty) {
+        final fv = (item['variants'] as List).first;
+        if (fv is Map && fv['id'] != null) {
+          variantId = fv['id'].toString();
+        }
+      }
+    }
+    variantId ??= prodId;
+
     final existingIndex = cartItems.indexWhere(
       (element) =>
           (element.productId == prodId || element.id == prodId) &&
-          (variantId == null || element.variantId == variantId),
+          (element.variantId == variantId),
     );
 
     if (existingIndex != -1) {
@@ -137,7 +192,7 @@ class BagController extends GetxController with SkeletonLoadingMixin {
       if (rawPriceMinor is num) {
         priceVal = rawPriceMinor / 100.0;
       } else {
-        final rawPrice = item['price'];
+        final rawPrice = item['rawPrice'] ?? item['price'];
         if (rawPrice is num) {
           priceVal = rawPrice.toDouble();
         } else if (rawPrice is String) {
@@ -158,8 +213,11 @@ class BagController extends GetxController with SkeletonLoadingMixin {
         id: prodId,
         productId: prodId,
         variantId: variantId,
-        brand: item['brand']?.toString() ?? 'Alif',
-        title: item['title']?.toString() ?? item['name']?.toString() ?? 'Product',
+        brand: item['brand']?.toString() ??
+            item['brandName']?.toString() ??
+            'Alif',
+        title:
+            item['title']?.toString() ?? item['name']?.toString() ?? 'Product',
         price: priceVal,
         quantity: 1,
         image: item['image']?.toString() ?? '',
@@ -167,26 +225,32 @@ class BagController extends GetxController with SkeletonLoadingMixin {
 
       cartItems.add(newItem);
 
-      try {
-        await dioPost(
-          endUrl: 'cart',
-          data: {
-            'productId': prodId,
-            if (newItem.variantId != null) 'variantId': newItem.variantId,
-            'qty': 1,
-          },
-          isJson: true,
-        );
-      } catch (_) {}
+      if (_hasAuth) {
+        try {
+          final response = await dioPost(
+            endUrl: 'cart',
+            data: {
+              'variantId': variantId,
+              'qty': 1,
+            },
+            isJson: true,
+          );
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            await fetchCart();
+          }
+        } catch (_) {}
+      }
     }
   }
 
   /// 6. DELETE /cart - Clear whole cart
   Future<void> clearCart() async {
     cartItems.clear();
-    try {
-      await dioDelete('cart');
-    } catch (_) {}
+    if (_hasAuth) {
+      try {
+        await dioDelete('cart');
+      } catch (_) {}
+    }
   }
 
   void proceedToCheckout() {
@@ -198,6 +262,19 @@ class BagController extends GetxController with SkeletonLoadingMixin {
         backgroundColor: AppColor.error,
         colorText: Colors.white,
       );
+      return;
+    }
+
+    if (!_hasAuth) {
+      Get.snackbar(
+        'Sign In Required',
+        'Please sign in to proceed to checkout',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.primary,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      Get.toNamed(Routes.LOGIN);
       return;
     }
 

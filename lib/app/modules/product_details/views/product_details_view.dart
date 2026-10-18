@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../../../routes/app_pages.dart';
+import '../../bag/controllers/bag_controller.dart';
 import '../controllers/product_details_controller.dart';
 
 class ProductDetailsView extends GetView<ProductDetailsController> {
@@ -49,14 +50,63 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
               onPressed: () => controller.toggleWishlist(),
             ),
           ),
-          IconButton(
-            icon: Icon(
-              Iconsax.shopping_bag,
-              color: AppColor.textPrimary,
-              size: 22.r,
-            ),
-            onPressed: () => Get.toNamed(Routes.BAG),
-          ),
+          Obx(() {
+            if (!Get.isRegistered<BagController>()) {
+              Get.put(BagController());
+            }
+            final bagCtrl = Get.find<BagController>();
+            final count = bagCtrl.totalItemCount;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Iconsax.shopping_bag,
+                    color: AppColor.textPrimary,
+                    size: 22.r,
+                  ),
+                  onPressed: () => Get.toNamed(Routes.BAG),
+                ),
+                if (count > 0)
+                  Positioned(
+                    top: 6.h,
+                    right: 6.w,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: count > 9 ? 4.w : 5.w,
+                          vertical: 1.5.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF5A00),
+                          shape:
+                              count > 9 ? BoxShape.rectangle : BoxShape.circle,
+                          borderRadius:
+                              count > 9 ? BorderRadius.circular(10.r) : null,
+                          border: Border.all(color: Colors.white, width: 1.5.r),
+                        ),
+                        constraints: BoxConstraints(
+                          minWidth: 16.r,
+                          minHeight: 16.r,
+                        ),
+                        child: Center(
+                          child: Text(
+                            count > 99 ? '99+' : count.toString(),
+                            style: GoogleFonts.inter(
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
           SizedBox(width: 4.w),
         ],
       ),
@@ -565,6 +615,7 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
       final category = item.categoryName;
       final brand = item.displayBrand;
       final sku = controller.activeSku;
+      final attrs = controller.selectedVariant?.attributes;
 
       return Container(
         width: double.infinity,
@@ -586,6 +637,11 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
             if (category != null && category.isNotEmpty)
               _buildSpecRow('Category', category),
             if (sku != null && sku.isNotEmpty) _buildSpecRow('SKU', sku),
+            if (attrs != null && attrs.isNotEmpty) ...[
+              for (var entry in attrs.entries)
+                if (entry.value != null && entry.value.toString().isNotEmpty)
+                  _buildSpecRow(entry.key, entry.value.toString()),
+            ],
             _buildSpecRow('Authenticity', '100% Genuine Guaranteed'),
             _buildSpecRow('Delivery', 'Standard & Open Box Available'),
           ],
@@ -601,7 +657,7 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 110.w,
+            width: 120.w,
             child: Text(
               label,
               style: GoogleFonts.lato(
@@ -644,7 +700,7 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
           SizedBox(height: 8.h),
           Obx(
             () => Text(
-              controller.product.value?.description ??
+              controller.product.value?.cleanDescription ??
                   'High-quality premium product featuring sleek modern design, durable build, and advanced technology. Perfect for everyday usage with industry-leading performance and customer warranty.',
               style: GoogleFonts.lato(
                 fontSize: 14.sp,

@@ -23,7 +23,14 @@ class CartItemModel {
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? productObj;
-    if (json['product'] is Map<String, dynamic>) {
+    Map<String, dynamic>? variantObj;
+    if (json['variant'] is Map<String, dynamic>) {
+      variantObj = json['variant'] as Map<String, dynamic>;
+      if (variantObj['product'] is Map<String, dynamic>) {
+        productObj = variantObj['product'] as Map<String, dynamic>;
+      }
+    }
+    if (productObj == null && json['product'] is Map<String, dynamic>) {
       productObj = json['product'] as Map<String, dynamic>;
     }
 
@@ -36,6 +43,9 @@ class CartItemModel {
         productObj?['_id']?.toString() ??
         extractedId;
 
+    String? extractedVariantId = json['variantId']?.toString() ??
+        variantObj?['id']?.toString();
+
     String extractedTitle = json['title']?.toString() ??
         json['name']?.toString() ??
         productObj?['title']?.toString() ??
@@ -43,16 +53,25 @@ class CartItemModel {
         'Product';
 
     String extractedBrand = json['brand']?.toString() ??
+        (productObj?['brand'] is Map
+            ? (productObj!['brand'] as Map)['name']?.toString()
+            : null) ??
         productObj?['brand']?.toString() ??
         productObj?['brandName']?.toString() ??
         'Alif';
 
     double extractedPrice = 0.0;
-    final rawPriceMinor = json['priceMinor'] ?? productObj?['priceMinor'];
+    final rawPriceMinor = json['unitPriceMinor'] ??
+        json['priceMinor'] ??
+        json['lineTotalMinor'] ??
+        variantObj?['priceMinor'] ??
+        productObj?['priceMinor'];
     if (rawPriceMinor is num) {
       extractedPrice = rawPriceMinor / 100.0;
     } else {
-      final rawPrice = json['price'] ?? productObj?['price'];
+      final rawPrice = json['price'] ??
+          variantObj?['price'] ??
+          productObj?['price'];
       if (rawPrice is num) {
         extractedPrice = rawPrice.toDouble();
       } else if (rawPrice != null) {
@@ -76,22 +95,46 @@ class CartItemModel {
     }
 
     String extractedImage = json['image']?.toString() ??
+        json['imageUrl']?.toString() ??
+        variantObj?['imageUrl']?.toString() ??
+        productObj?['imageUrl']?.toString() ??
         json['thumbnail']?.toString() ??
         productObj?['image']?.toString() ??
         productObj?['thumbnail']?.toString() ??
         '';
 
+    if (extractedImage.isEmpty && variantObj?['images'] is List) {
+      final vImgs = variantObj!['images'] as List;
+      if (vImgs.isNotEmpty && vImgs.first != null) {
+        final f = vImgs.first;
+        if (f is Map && f['fileUrl'] != null) {
+          extractedImage = f['fileUrl'].toString();
+        } else {
+          extractedImage = f.toString();
+        }
+      }
+    }
+
     if (extractedImage.isEmpty && productObj?['images'] is List) {
       final images = productObj!['images'] as List;
-      if (images.isNotEmpty) {
-        extractedImage = images.first.toString();
+      if (images.isNotEmpty && images.first != null) {
+        final firstImg = images.first;
+        if (firstImg is Map && firstImg['fileUrl'] != null) {
+          extractedImage = firstImg['fileUrl'].toString();
+        } else {
+          extractedImage = firstImg.toString();
+        }
       }
+    }
+
+    if (extractedImage.isNotEmpty && !extractedImage.startsWith('http')) {
+      extractedImage = 'https://alifworld.vercel.app$extractedImage';
     }
 
     return CartItemModel(
       id: extractedId,
       productId: extractedProductId,
-      variantId: json['variantId']?.toString(),
+      variantId: extractedVariantId,
       title: extractedTitle,
       brand: extractedBrand,
       price: extractedPrice,
@@ -139,14 +182,37 @@ class CartModel {
     List<CartItemModel> parsedItems = [];
     final rawItems = json['items'] ?? json['cartItems'] ?? json['lines'];
     if (rawItems is List) {
-      parsedItems = rawItems
-          .whereType<Map<String, dynamic>>()
-          .map((e) => CartItemModel.fromJson(e))
-          .toList();
+      for (var e in rawItems) {
+        if (e is Map) {
+          try {
+            parsedItems.add(
+              CartItemModel.fromJson(Map<String, dynamic>.from(e)),
+            );
+          } catch (_) {}
+        }
+      }
+    }
+    if (parsedItems.isEmpty && json['groups'] is List) {
+      for (var g in json['groups']) {
+        if (g is Map && g['items'] is List) {
+          for (var e in g['items']) {
+            if (e is Map) {
+              try {
+                parsedItems.add(
+                  CartItemModel.fromJson(Map<String, dynamic>.from(e)),
+                );
+              } catch (_) {}
+            }
+          }
+        }
+      }
     }
 
     double calcSubtotal = 0.0;
-    if (json['subtotal'] is num) {
+    final rawSubtotalMinor = json['subtotalMinor'];
+    if (rawSubtotalMinor is num) {
+      calcSubtotal = rawSubtotalMinor.toDouble() / 100.0;
+    } else if (json['subtotal'] is num) {
       calcSubtotal = (json['subtotal'] as num).toDouble();
     } else {
       for (var item in parsedItems) {

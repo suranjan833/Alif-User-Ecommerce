@@ -32,6 +32,19 @@ class LoginController extends GetxController {
   void onInit() {
     super.onInit();
     phoneController.addListener(_onPhoneChanged);
+    _checkExistingSession();
+  }
+
+  void _checkExistingSession() {
+    final token = getBox.read(USER_TOKEN);
+    final hasToken = token != null && token.toString().trim().isNotEmpty;
+    final loggedInVal = getBox.read(IS_USER_LOGGED_IN);
+    final isLoggedIn = (loggedInVal == true || loggedInVal == 'true' || hasToken);
+    if (isLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed(Routes.MAIN_NAVIGATION);
+      });
+    }
   }
 
   void _onPhoneChanged() {
@@ -233,8 +246,10 @@ class LoginController extends GetxController {
       final payload = responseData['data'] ?? responseData;
       if (payload is Map<String, dynamic>) {
         final token = payload['token'] ?? payload['accessToken'] ?? payload['authtoken'];
-        if (token != null) {
-          getBox.write(USER_TOKEN, token.toString());
+        if (token != null && token.toString().trim().isNotEmpty) {
+          getBox.write(USER_TOKEN, token.toString().trim());
+          getBox.write(IS_USER_LOGGED_IN, true);
+        } else {
           getBox.write(IS_USER_LOGGED_IN, true);
         }
         final user = payload['user'];
@@ -244,7 +259,11 @@ class LoginController extends GetxController {
           if (user['email'] != null) getBox.write(USER_EMAIL, user['email'].toString());
           if (user['phone'] != null) getBox.write(USER_PHONE, user['phone'].toString());
         }
+      } else {
+        getBox.write(IS_USER_LOGGED_IN, true);
       }
+    } else {
+      getBox.write(IS_USER_LOGGED_IN, true);
     }
 
     showSnack(

@@ -1,3 +1,29 @@
+import 'package:flutter/material.dart';
+
+Color? parseHexColor(dynamic hexString) {
+  if (hexString == null) return null;
+  String hex = hexString.toString().trim();
+  if (hex.isEmpty || hex.toLowerCase() == 'null') return null;
+  if (hex.toLowerCase() == 'black') return const Color(0xFF000000);
+  if (hex.toLowerCase() == 'white') return const Color(0xFFFFFFFF);
+
+  if (hex.startsWith('#')) {
+    hex = hex.replaceFirst('#', '');
+  }
+  if (hex.length == 6) {
+    hex = 'FF$hex';
+  } else if (hex.length == 3) {
+    hex = 'FF${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}';
+  } else if (hex.length != 8) {
+    return null;
+  }
+  final val = int.tryParse(hex, radix: 16);
+  if (val != null) {
+    return Color(val);
+  }
+  return null;
+}
+
 class BrandModel {
   final String id;
   final String name;
@@ -127,7 +153,12 @@ class ShowcaseProductModel {
     this.isFavorite = false,
   });
 
-  String get displayImage => images.isNotEmpty ? images.first : '';
+  String get displayImage {
+    if (images.isEmpty) return '';
+    final first = images.first;
+    if (first.startsWith('http://') || first.startsWith('https://')) return first;
+    return 'https://alifworld.vercel.app$first';
+  }
 
   factory ShowcaseProductModel.fromJson(Map<String, dynamic> json) {
     double parsedPrice = 0.0;
@@ -181,6 +212,18 @@ class ShowcaseProductModel {
       parsedImages = (json['images'] as List).map((e) => e.toString()).toList();
     } else if (json['image'] != null) {
       parsedImages = [json['image'].toString()];
+    }
+
+    if (parsedImages.isEmpty && parsedVariants.isNotEmpty) {
+      for (var v in parsedVariants) {
+        if (v['images'] is List) {
+          for (var img in v['images'] as List) {
+            if (img != null && img.toString().isNotEmpty) {
+              parsedImages.add(img.toString());
+            }
+          }
+        }
+      }
     }
 
     String? shopName;
@@ -323,19 +366,73 @@ class ShowcaseRailModel {
 }
 
 class ShowcaseModel {
+  final String? headerBgMobileUrl;
+  final String? headerBgDesktopUrl;
+  final String? allCategoryIconUrl;
+  final String? categoryName;
+  final String? categorySlug;
+  final Color? navTapColor;
+  final Color? navIdleColor;
   final List<BrandModel> brands;
   final List<ShowcaseMiniBannerModel> miniBanners;
   final List<ShowcaseRailModel> rails;
   final List<Map<String, dynamic>> rawCategories;
 
   ShowcaseModel({
+    this.headerBgMobileUrl,
+    this.headerBgDesktopUrl,
+    this.allCategoryIconUrl,
+    this.categoryName,
+    this.categorySlug,
+    this.navTapColor,
+    this.navIdleColor,
     this.brands = const [],
     this.miniBanners = const [],
     this.rails = const [],
     this.rawCategories = const [],
   });
 
+  String get fullHeaderBgMobileUrl {
+    final url = headerBgMobileUrl ?? headerBgDesktopUrl;
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return 'https://alifworld.vercel.app$url';
+  }
+
+  String get fullAllCategoryIconUrl {
+    if (allCategoryIconUrl == null || allCategoryIconUrl!.isEmpty) return '';
+    if (allCategoryIconUrl!.startsWith('http://') ||
+        allCategoryIconUrl!.startsWith('https://')) {
+      return allCategoryIconUrl!;
+    }
+    return 'https://alifworld.vercel.app$allCategoryIconUrl';
+  }
+
   factory ShowcaseModel.fromJson(Map<String, dynamic> json) {
+    String? mobUrl;
+    String? deskUrl;
+    String? catName;
+    String? catSlug;
+
+    if (json['category'] is Map<String, dynamic>) {
+      final cat = json['category'] as Map<String, dynamic>;
+      mobUrl = cat['headerBgMobileUrl']?.toString();
+      deskUrl = cat['headerBgDesktopUrl']?.toString();
+      catName = cat['name']?.toString();
+      catSlug = cat['slug']?.toString();
+    } else {
+      mobUrl = json['headerBgMobileUrl']?.toString();
+      deskUrl = json['headerBgDesktopUrl']?.toString();
+    }
+
+    if (mobUrl == null || mobUrl.isEmpty) {
+      if (json['allCategoryHeaderBg'] is Map<String, dynamic>) {
+        final allBg = json['allCategoryHeaderBg'] as Map<String, dynamic>;
+        mobUrl = allBg['mobileUrl']?.toString();
+        deskUrl = allBg['desktopUrl']?.toString();
+      }
+    }
+
     List<BrandModel> parsedBrands = [];
     if (json['brands'] is List) {
       parsedBrands = (json['brands'] as List)
@@ -367,7 +464,38 @@ class ShowcaseModel {
           .toList();
     }
 
+    Color? tapColor;
+    Color? idleColor;
+
+    if (json['catNavColors'] is Map<String, dynamic>) {
+      final cnc = json['catNavColors'] as Map<String, dynamic>;
+      tapColor = parseHexColor(
+        cnc['selected'] ?? cnc['tapColor'] ?? cnc['active'] ?? cnc['tap'],
+      );
+      idleColor = parseHexColor(cnc['idle'] ?? cnc['inactive']);
+    }
+
+    if (tapColor == null && json['category'] is Map<String, dynamic>) {
+      final catObj = json['category'] as Map<String, dynamic>;
+      if (catObj['catNavColors'] is Map<String, dynamic>) {
+        final cnc = catObj['catNavColors'] as Map<String, dynamic>;
+        tapColor = parseHexColor(
+          cnc['selected'] ?? cnc['tapColor'] ?? cnc['active'] ?? cnc['tap'],
+        );
+        idleColor = parseHexColor(cnc['idle'] ?? cnc['inactive']);
+      } else if (catObj['tapColor'] != null) {
+        tapColor = parseHexColor(catObj['tapColor']);
+      }
+    }
+
     return ShowcaseModel(
+      headerBgMobileUrl: mobUrl,
+      headerBgDesktopUrl: deskUrl,
+      allCategoryIconUrl: json['allCategoryIconUrl']?.toString(),
+      categoryName: catName,
+      categorySlug: catSlug,
+      navTapColor: tapColor,
+      navIdleColor: idleColor,
       brands: parsedBrands,
       miniBanners: parsedBanners,
       rails: parsedRails,

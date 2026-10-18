@@ -71,10 +71,30 @@ class ProductVariantModel {
 
     List<String> imgs = [];
     if (json['images'] is List) {
-      imgs = (json['images'] as List).map((e) => e.toString()).toList();
-    } else if (json['image'] != null) {
+      for (var item in json['images'] as List) {
+        if (item is Map) {
+          final url = item['fileUrl'] ??
+              item['url'] ??
+              item['image'] ??
+              item['src'];
+          if (url != null && url.toString().isNotEmpty) {
+            imgs.add(url.toString());
+          }
+        } else if (item != null && item.toString().isNotEmpty) {
+          imgs.add(item.toString());
+        }
+      }
+    } else if (json['image'] != null && json['image'].toString().isNotEmpty) {
       imgs = [json['image'].toString()];
     }
+
+    int? sQty = json['stockQty'] is num
+        ? (json['stockQty'] as num).toInt()
+        : (json['stock'] is num
+            ? (json['stock'] as num).toInt()
+            : (json['quantity'] is num
+                ? (json['quantity'] as num).toInt()
+                : null));
 
     return ProductVariantModel(
       id: json['id']?.toString() ?? '',
@@ -88,10 +108,10 @@ class ProductVariantModel {
       productPoints: json['productPoints'] is num
           ? (json['productPoints'] as num).toInt()
           : null,
-      stockQty: json['stockQty'] is int ? json['stockQty'] as int : null,
+      stockQty: sQty,
       images: imgs,
-      attributes: json['attributes'] is Map<String, dynamic>
-          ? json['attributes'] as Map<String, dynamic>
+      attributes: json['attributes'] is Map
+          ? Map<String, dynamic>.from(json['attributes'] as Map)
           : null,
     );
   }
@@ -281,13 +301,74 @@ class ProductDetailsModel {
       (stockQty != null && stockQty! > 0) ||
       (variants.isNotEmpty && variants.any((v) => v.inStock));
 
-  factory ProductDetailsModel.fromJson(Map<String, dynamic> json) {
+  String get cleanDescription {
+    if (description.isEmpty) {
+      return 'Experience genuine quality with $name. Certified authentic product directly from ${seller.shopName} on Alif with fast and secure shipping.';
+    }
+    if (!description.contains('<')) {
+      return description;
+    }
+    return description
+        .replaceAll(RegExp(r'<style[^>]*>[\s\S]*?</style>'), '')
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  factory ProductDetailsModel.fromJson(Map<String, dynamic> rawJson) {
+    Map<String, dynamic> json = rawJson;
+    if (json.containsKey('product') && json['product'] is Map) {
+      json = Map<String, dynamic>.from(json['product'] as Map);
+    } else if (json.containsKey('data') && json['data'] is Map) {
+      json = Map<String, dynamic>.from(json['data'] as Map);
+      if (json.containsKey('product') && json['product'] is Map) {
+        json = Map<String, dynamic>.from(json['product'] as Map);
+      }
+    }
+
     // 1. Resolve Name
     final resolvedName = json['name']?.toString() ??
         json['title']?.toString() ??
         'Product Details';
 
-    // 2. Resolve Price Minor
+    // 2. Resolve Images
+    List<String> imgs = [];
+    if (json['images'] is List) {
+      for (var item in json['images'] as List) {
+        if (item is Map) {
+          final url = item['fileUrl'] ??
+              item['url'] ??
+              item['image'] ??
+              item['src'];
+          if (url != null && url.toString().isNotEmpty) {
+            imgs.add(url.toString());
+          }
+        } else if (item != null && item.toString().isNotEmpty) {
+          imgs.add(item.toString());
+        }
+      }
+    } else if (json['image'] != null && json['image'].toString().isNotEmpty) {
+      imgs = [json['image'].toString()];
+    }
+
+    // 3. Resolve Variants
+    List<ProductVariantModel> parsedVariants = [];
+    if (json['variants'] is List) {
+      for (var v in json['variants'] as List) {
+        if (v is Map) {
+          parsedVariants.add(
+            ProductVariantModel.fromJson(Map<String, dynamic>.from(v)),
+          );
+        }
+      }
+    }
+
+    // 4. Resolve Price Minor
     int? pMinor = json['priceMinor'] is num
         ? (json['priceMinor'] as num).toInt()
         : null;
@@ -306,8 +387,14 @@ class ProductDetailsModel {
         if (parsed != null) pMinor = (parsed * 100).toInt();
       }
     }
+    // Fallback to variant price
+    if (pMinor == null &&
+        parsedVariants.isNotEmpty &&
+        parsedVariants.first.priceMinor != null) {
+      pMinor = parsedVariants.first.priceMinor;
+    }
 
-    // 3. Resolve Compare Price Minor
+    // 5. Resolve Compare Price Minor
     int? cMinor = json['compareAtPriceMinor'] is num
         ? (json['compareAtPriceMinor'] as num).toInt()
         : null;
@@ -326,29 +413,19 @@ class ProductDetailsModel {
         if (parsed != null) cMinor = (parsed * 100).toInt();
       }
     }
-
-    // 4. Resolve Images
-    List<String> imgs = [];
-    if (json['images'] is List) {
-      imgs = (json['images'] as List).map((e) => e.toString()).toList();
-    } else if (json['image'] != null && json['image'].toString().isNotEmpty) {
-      imgs = [json['image'].toString()];
-    }
-
-    // 5. Resolve Variants
-    List<ProductVariantModel> parsedVariants = [];
-    if (json['variants'] is List) {
-      parsedVariants = (json['variants'] as List)
-          .whereType<Map<String, dynamic>>()
-          .map((v) => ProductVariantModel.fromJson(v))
-          .toList();
+    // Fallback to variant compare price
+    if (cMinor == null &&
+        parsedVariants.isNotEmpty &&
+        parsedVariants.first.compareAtPriceMinor != null) {
+      cMinor = parsedVariants.first.compareAtPriceMinor;
     }
 
     // 6. Resolve Seller
     ProductSellerModel parsedSeller;
-    if (json['seller'] is Map<String, dynamic>) {
-      parsedSeller =
-          ProductSellerModel.fromJson(json['seller'] as Map<String, dynamic>);
+    if (json['seller'] is Map) {
+      parsedSeller = ProductSellerModel.fromJson(
+        Map<String, dynamic>.from(json['seller'] as Map),
+      );
     } else {
       parsedSeller = ProductSellerModel(
         shopName: json['sellerShopName']?.toString() ?? 'Alif Official Store',
@@ -362,6 +439,40 @@ class ProductDetailsModel {
           'Experience genuine quality with $resolvedName. Certified authentic product directly from ${parsedSeller.shopName} on Alif with fast and secure shipping.';
     }
 
+    // 8. Resolve Brand
+    String? bName;
+    if (json['brand'] is Map) {
+      bName = (json['brand'] as Map)['name']?.toString();
+    } else if (json['brand'] != null) {
+      bName = json['brand'].toString();
+    } else if (json['brandName'] != null) {
+      bName = json['brandName'].toString();
+    }
+    if (bName == null || bName.isEmpty) {
+      final lowerName = resolvedName.toLowerCase();
+      if (lowerName.contains('iphone') ||
+          lowerName.contains('apple') ||
+          lowerName.contains('macbook') ||
+          lowerName.contains('ipad')) {
+        bName = 'Apple';
+      } else if (lowerName.contains('samsung') ||
+          lowerName.contains('galaxy')) {
+        bName = 'Samsung';
+      } else if (lowerName.contains('sony')) {
+        bName = 'Sony';
+      }
+    }
+
+    // 9. Resolve Category
+    String? cName;
+    if (json['category'] is Map) {
+      cName = (json['category'] as Map)['name']?.toString();
+    } else if (json['category'] != null) {
+      cName = json['category'].toString();
+    } else if (json['categoryName'] != null) {
+      cName = json['categoryName'].toString();
+    }
+
     return ProductDetailsModel(
       id: json['id']?.toString() ?? '',
       name: resolvedName,
@@ -372,14 +483,15 @@ class ProductDetailsModel {
       productPoints: json['productPoints'] is num
           ? (json['productPoints'] as num).toInt()
           : null,
-      stockQty: json['stockQty'] is int ? json['stockQty'] as int : null,
+      stockQty: json['stockQty'] is int
+          ? json['stockQty'] as int
+          : (json['stock'] is int ? json['stock'] as int : null),
       images: imgs,
       variants: parsedVariants,
       seller: parsedSeller,
       categoryId: json['categoryId']?.toString(),
-      categoryName: json['categoryName']?.toString() ??
-          json['category']?.toString(),
-      brandName: json['brandName']?.toString() ?? json['brand']?.toString(),
+      categoryName: cName,
+      brandName: bName,
       ratingAvg: json['ratingAvg'] is num
           ? (json['ratingAvg'] as num).toDouble()
           : (json['rating'] is num ? (json['rating'] as num).toDouble() : null),

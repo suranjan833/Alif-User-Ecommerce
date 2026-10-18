@@ -87,7 +87,10 @@ class SplashController extends GetxController
   void _startAnimationAndNavigate() async {
     await animationController.forward();
     await Future.delayed(const Duration(milliseconds: 500));
-    final isLoggedIn = getBox.read(IS_USER_LOGGED_IN) == true;
+    final token = getBox.read(USER_TOKEN);
+    final hasToken = token != null && token.toString().trim().isNotEmpty;
+    final loggedInVal = getBox.read(IS_USER_LOGGED_IN);
+    final isLoggedIn = (loggedInVal == true || loggedInVal == 'true' || hasToken);
     if (isLoggedIn) {
       Get.offAllNamed(Routes.MAIN_NAVIGATION);
     } else {

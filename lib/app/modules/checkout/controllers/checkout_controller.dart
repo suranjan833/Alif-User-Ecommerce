@@ -458,7 +458,7 @@ class CheckoutController extends GetxController {
 
   /// 3. POST /checkout/place - Place order
   Future<void> placeOrder() async {
-    if (addresses.isEmpty) {
+    if (addresses.isEmpty || selectedAddressId == null || selectedAddressId!.isEmpty) {
       Get.snackbar(
         'Address Required',
         'Please add a delivery address to complete your order',
@@ -473,8 +473,7 @@ class CheckoutController extends GetxController {
     }
 
     if (selectedPaymentMethod.value == 'bKash' ||
-        selectedPaymentMethod.value == 'Nagad' ||
-        selectedPaymentMethod.value == 'Razorpay') {
+        selectedPaymentMethod.value == 'Nagad') {
       openMobileBankingModal(selectedPaymentMethod.value);
     } else {
       _executePlaceOrder();
@@ -482,29 +481,42 @@ class CheckoutController extends GetxController {
   }
 
   Future<void> _executePlaceOrder({String? gatewayPaymentId}) async {
+    if (selectedAddressId == null || selectedAddressId!.isEmpty) {
+      Get.snackbar(
+        'Address Required',
+        'Please select a valid delivery address',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.error,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     isProcessingPayment.value = true;
     final apiPayment = _mapPaymentMethodToApi(selectedPaymentMethod.value);
+    final idempotencyKey =
+        'ALF_IDEMP_${DateTime.now().millisecondsSinceEpoch}_${selectedAddressId!}';
+
+    final payload = <String, dynamic>{
+      'addressId': selectedAddressId,
+      'paymentMethod': apiPayment,
+      if (appliedPromoCode.value.isNotEmpty)
+        'couponCode': appliedPromoCode.value,
+      if (apiPayment == 'wallet') 'remainderMethod': 'cod',
+      'returnUrl': 'https://alifworld.vercel.app/order-success',
+    };
 
     try {
       final response = await dioPost(
         endUrl: 'checkout/place',
-        data: {
-          'paymentMethod': apiPayment,
-          if (selectedAddressId != null) 'addressId': selectedAddressId,
-          if (appliedPromoCode.value.isNotEmpty)
-            'couponCode': appliedPromoCode.value,
-          'returnUrl': 'https://alifworld.vercel.app/order-success',
-        },
+        data: payload,
         isJson: true,
+        customHeaders: {
+          'Idempotency-Key': idempotencyKey,
+        },
       );
 
       isProcessingPayment.value = false;
-
-      String orderId =
-          '#ALF-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-      String paymentId =
-          gatewayPaymentId ??
-          '${apiPayment.toUpperCase()}_${DateTime.now().millisecondsSinceEpoch}';
 
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           response.data != null) {
@@ -512,6 +524,9 @@ class CheckoutController extends GetxController {
         if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
           rawData = rawData['data'];
         }
+
+        String orderId =
+            '#ALF-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
         if (rawData is Map<String, dynamic>) {
           if (rawData['orderId'] != null) {
             orderId = rawData['orderId'].toString();
@@ -519,22 +534,69 @@ class CheckoutController extends GetxController {
             orderId = '#${rawData['id']}';
           }
         }
-      }
 
-      _processSuccessfulOrder(
-        paymentId: paymentId,
-        paymentMethod: selectedPaymentMethod.value,
-        customOrderId: orderId,
-      );
-    } catch (_) {
+        String paymentId = gatewayPaymentId ??
+            '${apiPayment.toUpperCase()}_${DateTime.now().millisecondsSinceEpoch}';
+
+        _processSuccessfulOrder(
+          paymentId: paymentId,
+          paymentMethod: selectedPaymentMethod.value,
+          customOrderId: orderId,
+        );
+      } else {
+        // Handle error status
+        String errorMsg = 'Failed to place order. Please try again.';
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          if (data['message'] != null) {
+            errorMsg = data['message'].toString();
+          } else if (data['error'] != null) {
+            if (data['error'] is Map && data['error']['message'] != null) {
+              errorMsg = data['error']['message'].toString();
+            } else {
+              errorMsg = data['error'].toString();
+            }
+          }
+        }
+
+        if (response.statusCode == 401) {
+          Get.snackbar(
+            'Login Required',
+            'Please log in to your account to place an order',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.error,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+            mainButton: TextButton(
+              onPressed: () => Get.toNamed(Routes.LOGIN),
+              child: const Text(
+                'LOG IN',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          );
+        } else {
+          Get.snackbar(
+            'Order Placement Error',
+            errorMsg,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppColor.error,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+        }
+      }
+    } catch (e) {
       isProcessingPayment.value = false;
-      final orderId =
-          '#ALF-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-      _processSuccessfulOrder(
-        paymentId:
-            gatewayPaymentId ?? 'PAY_${DateTime.now().millisecondsSinceEpoch}',
-        paymentMethod: selectedPaymentMethod.value,
-        customOrderId: orderId,
+      Get.snackbar(
+        'Connection Error',
+        'Unable to reach server. Please check your internet connection.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.error,
+        colorText: Colors.white,
       );
     }
   }

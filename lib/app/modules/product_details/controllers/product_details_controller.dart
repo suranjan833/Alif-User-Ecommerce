@@ -57,12 +57,37 @@ class ProductDetailsController extends GetxController with SkeletonLoadingMixin 
   }
 
   void _setProduct(ProductDetailsModel model) {
-    product.value = model;
-    variants.assignAll(model.variants);
-    seller.value = model.seller;
-    isWishlisted.value = model.isFavorite;
+    final prev = product.value;
+    final finalImages = model.images.isNotEmpty
+        ? model.images
+        : (prev != null && prev.images.isNotEmpty ? prev.images : <String>[]);
+    final finalVariants = model.variants.isNotEmpty
+        ? model.variants
+        : (prev != null && prev.variants.isNotEmpty
+            ? prev.variants
+            : <ProductVariantModel>[]);
 
-    if (selectedVariantIndex.value >= model.variants.length) {
+    final merged = model.copyWith(
+      images: finalImages,
+      variants: finalVariants,
+      priceMinor: model.priceMinor ?? prev?.priceMinor,
+      compareAtPriceMinor:
+          model.compareAtPriceMinor ?? prev?.compareAtPriceMinor,
+      brandName: (model.brandName != null && model.brandName!.isNotEmpty)
+          ? model.brandName
+          : prev?.brandName,
+      categoryName:
+          (model.categoryName != null && model.categoryName!.isNotEmpty)
+              ? model.categoryName
+              : prev?.categoryName,
+    );
+
+    product.value = merged;
+    variants.assignAll(merged.variants);
+    seller.value = merged.seller;
+    isWishlisted.value = merged.isFavorite;
+
+    if (selectedVariantIndex.value >= merged.variants.length) {
       selectedVariantIndex.value = 0;
     }
   }
@@ -74,11 +99,16 @@ class ProductDetailsController extends GetxController with SkeletonLoadingMixin 
       final response = await dioGet('catalog/products/$slug');
       if (response.statusCode == 200 && response.data != null) {
         dynamic rawData = response.data;
-        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+        if (rawData is Map && rawData.containsKey('data')) {
           rawData = rawData['data'];
         }
-        if (rawData is Map<String, dynamic>) {
-          _setProduct(ProductDetailsModel.fromJson(rawData));
+        if (rawData is Map && rawData.containsKey('product')) {
+          rawData = rawData['product'];
+        }
+        if (rawData is Map) {
+          _setProduct(
+            ProductDetailsModel.fromJson(Map<String, dynamic>.from(rawData)),
+          );
           return;
         }
       }
@@ -87,19 +117,21 @@ class ProductDetailsController extends GetxController with SkeletonLoadingMixin 
       final searchResponse = await dioGet('catalog/search');
       if (searchResponse.statusCode == 200 && searchResponse.data != null) {
         dynamic rawData = searchResponse.data;
-        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+        if (rawData is Map && rawData.containsKey('data')) {
           rawData = rawData['data'];
         }
         List? prods;
-        if (rawData is Map<String, dynamic> && rawData.containsKey('products')) {
+        if (rawData is Map && rawData.containsKey('products')) {
           prods = rawData['products'] as List?;
         }
         if (prods != null) {
           final found = prods.firstWhereOrNull(
             (p) => p is Map && (p['slug'] == slug || p['id'] == slug),
           );
-          if (found != null && found is Map<String, dynamic>) {
-            _setProduct(ProductDetailsModel.fromJson(found));
+          if (found != null && found is Map) {
+            _setProduct(
+              ProductDetailsModel.fromJson(Map<String, dynamic>.from(found)),
+            );
           }
         }
       }
@@ -125,9 +157,10 @@ class ProductDetailsController extends GetxController with SkeletonLoadingMixin 
     if (p != null && p.images.isNotEmpty) {
       return p.images;
     }
-    return [
-      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=400&auto=format&fit=crop',
-    ];
+    if (p != null && p.displayImage.isNotEmpty) {
+      return [p.displayImage];
+    }
+    return const [];
   }
 
   double get activePriceValue {
@@ -207,6 +240,9 @@ class ProductDetailsController extends GetxController with SkeletonLoadingMixin 
     isWishlisted.value = !isWishlisted.value;
     final p = product.value;
     final productId = p?.id ?? '';
+    final sv = selectedVariant;
+    final vId = sv?.id ??
+        (p?.variants.isNotEmpty == true ? p!.variants.first.id : productId);
 
     Get.snackbar(
       isWishlisted.value ? 'Added to Wishlist' : 'Removed from Wishlist',
@@ -219,16 +255,16 @@ class ProductDetailsController extends GetxController with SkeletonLoadingMixin 
       duration: const Duration(seconds: 2),
     );
 
-    if (productId.isNotEmpty) {
+    if (vId.isNotEmpty) {
       try {
         if (isWishlisted.value) {
           await dioPost(
             endUrl: 'wishlist',
-            data: {'productId': productId},
+            data: {'variantId': vId},
             isJson: true,
           );
         } else {
-          await dioDelete('wishlist?productId=$productId');
+          await dioDelete('wishlist?variantId=$vId');
         }
       } catch (_) {}
     }

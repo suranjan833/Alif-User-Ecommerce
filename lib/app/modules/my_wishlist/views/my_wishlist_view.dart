@@ -37,6 +37,20 @@ class MyWishlistView extends GetView<MyWishlistController> {
           ),
         ),
         centerTitle: false,
+        actions: [
+          Obx(
+            () => controller.wishlistItems.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Iconsax.trash,
+                      color: AppColor.error,
+                      size: 20.r,
+                    ),
+                    onPressed: () => controller.clearWishlist(),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -113,8 +127,10 @@ class MyWishlistView extends GetView<MyWishlistController> {
                               color: AppColor.error,
                               size: 18.r,
                             ),
-                            onPressed: () =>
-                                controller.removeItem(item['id'] as String),
+                            onPressed: () => controller.removeItem(
+                              item['id'] as String,
+                              item['variantId'] as String?,
+                            ),
                           ),
                         ),
                       ],
