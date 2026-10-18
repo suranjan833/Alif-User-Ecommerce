@@ -40,10 +40,13 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
   }
 
   Widget _buildBody() {
-    return Row(
+    return Obx(() {
+      final showSidebar = controller.showSubCategorySidebar;
+
+      return Row(
         children: [
-          // 1. Left Vertical Sub-category Sidebar
-          _buildSubCategorySidebar(),
+          // 1. Left Vertical Sub-category Sidebar (shown only when category has subcategories)
+          if (showSidebar) _buildSubCategorySidebar(),
 
           // 2. Right Main Products Listing Content Area
           Expanded(
@@ -86,6 +89,14 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                 // Product Cards Grid
                 Expanded(
                   child: Obx(() {
+                    if (controller.isProductsLoading.value) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColor.primary,
+                        ),
+                      );
+                    }
+
                     final products = controller.filteredProducts;
 
                     if (products.isEmpty) {
@@ -93,12 +104,17 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                     }
 
                     return GridView.builder(
-                      padding: EdgeInsets.fromLTRB(10.w, 6.h, 10.w, 20.h),
+                      padding: EdgeInsets.fromLTRB(
+                        showSidebar ? 10.w : 16.w,
+                        6.h,
+                        showSidebar ? 10.w : 16.w,
+                        20.h,
+                      ),
                       physics: const BouncingScrollPhysics(),
                       gridDelegate:
                           SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            childAspectRatio: 0.52,
+                            childAspectRatio: showSidebar ? 0.52 : 0.68,
                             crossAxisSpacing: 10.w,
                             mainAxisSpacing: 10.h,
                           ),
@@ -114,7 +130,8 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
             ),
           ),
         ],
-    );
+      );
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -155,27 +172,45 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
               ),
             ),
             SizedBox(width: 10.w),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  controller.categoryName.value,
-                  style: GoogleFonts.inter(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w800,
-                    color: AppColor.textPrimary,
-                    letterSpacing: -0.2,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Obx(
+                    () {
+                      final idx = controller.selectedSubCategoryIndex.value;
+                      final title = idx == 0
+                          ? controller.categoryName.value
+                          : (controller.subCategories[idx]['name'] as String)
+                              .replaceAll('\n', ' ');
+                      return Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w800,
+                          color: AppColor.textPrimary,
+                          letterSpacing: -0.2,
+                        ),
+                      );
+                    },
                   ),
-                ),
-                Text(
-                  '${controller.totalItemCount} products',
-                  style: GoogleFonts.inter(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w400,
-                    color: AppColor.textSecondary,
+                  Obx(
+                    () => Text(
+                      '${controller.visibleItemCount} products',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w400,
+                        color: AppColor.textSecondary,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -218,17 +253,19 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          right: BorderSide(color: Color(0xFFF1F5F9), width: 1.r),
+          right: BorderSide(color: const Color(0xFFF1F5F9), width: 1.r),
         ),
       ),
-      child: Obx(
-        () => ListView.builder(
+      child: Obx(() {
+        final selectedIndex = controller.selectedSubCategoryIndex.value;
+        final subCats = controller.subCategories;
+
+        return ListView.builder(
           padding: EdgeInsets.symmetric(vertical: 10.h),
-          itemCount: controller.subCategories.length,
+          itemCount: subCats.length,
           itemBuilder: (context, index) {
-            final subCategory = controller.subCategories[index];
-            final isSelected =
-                index == controller.selectedSubCategoryIndex.value;
+            final subCategory = subCats[index];
+            final isSelected = index == selectedIndex;
 
             return GestureDetector(
               onTap: () => controller.selectSubCategory(index),
@@ -317,8 +354,8 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
               ),
             );
           },
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -370,40 +407,70 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 64.r,
-            height: 64.r,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64.r,
+              height: 64.r,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Iconsax.box,
+                size: 28.r,
+                color: AppColor.textHint,
+              ),
             ),
-            child: Icon(
-              Iconsax.box,
-              size: 28.r,
-              color: AppColor.textHint,
+            SizedBox(height: 12.h),
+            Obx(
+              () {
+                if (controller.isBrandView) {
+                  return Text(
+                    'No products found for "${controller.categoryName.value}"',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColor.textPrimary,
+                    ),
+                  );
+                }
+                final idx = controller.selectedSubCategoryIndex.value;
+                final subName = idx < controller.subCategories.length
+                    ? (controller.subCategories[idx]['name'] as String).replaceAll('\n', ' ')
+                    : '';
+                return Text(
+                  idx == 0
+                      ? 'No products in this category yet'
+                      : 'No products in "$subName" yet',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColor.textPrimary,
+                  ),
+                );
+              },
             ),
-          ),
-          SizedBox(height: 12.h),
-          Text(
-            'No products here yet',
-            style: GoogleFonts.inter(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColor.textPrimary,
+            SizedBox(height: 4.h),
+            Obx(
+              () => Text(
+                controller.isBrandView
+                    ? 'There are currently no products listed under this brand in the live catalog.'
+                    : 'Try selecting another category or check back soon',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 12.sp,
+                  color: AppColor.textSecondary,
+                ),
+              ),
             ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            'Try another sub-category',
-            style: GoogleFonts.inter(
-              fontSize: 12.sp,
-              color: AppColor.textSecondary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -414,12 +481,12 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
 
   Widget _buildProductCard(BuildContext context, ProductModel product) {
     final productId = product.id ?? '';
-    final imageUrl = product.image ?? 'https://images.unsplash.com/photo-1550525811-e5869dd03032?q=80&w=400&auto=format&fit=crop';
+    final imageUrl = product.image ?? '';
     final title = product.title ?? 'Product';
     final brand = product.brand ?? 'Brand';
     final price = product.price;
-    final originalPrice = product.originalPrice ?? (price * 1.2);
-    final discount = product.discount ?? '15% OFF';
+    final originalPrice = product.originalPrice;
+    final discount = product.discount ?? '';
 
     return GestureDetector(
       onTap: () => Get.toNamed(Routes.PRODUCT_DETAILS, arguments: product.toJson()),
@@ -571,26 +638,28 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Discount Text
-                  Row(
-                    children: [
-                      Icon(
-                        Iconsax.discount_shape,
-                        size: 11.r,
-                        color: const Color(0xFF16A34A),
-                      ),
-                      SizedBox(width: 3.w),
-                      Text(
-                        discount,
-                        style: GoogleFonts.inter(
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w700,
+                  // Discount Text (only when genuine discount exists)
+                  if (discount.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.discount_shape,
+                          size: 11.r,
                           color: const Color(0xFF16A34A),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 4.h),
+                        SizedBox(width: 3.w),
+                        Text(
+                          discount,
+                          style: GoogleFonts.inter(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF16A34A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4.h),
+                  ],
 
                   // Product Title
                   Text(
@@ -627,7 +696,7 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                     runSpacing: 2.h,
                     children: [
                       Text(
-                        '₹${price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2)}',
+                        '৳${price.toStringAsFixed(price.truncateToDouble() == price ? 0 : 2)}',
                         style: GoogleFonts.inter(
                           fontSize: 13.5.sp,
                           fontWeight: FontWeight.w800,
@@ -635,9 +704,9 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                           letterSpacing: -0.3,
                         ),
                       ),
-                      if (originalPrice > price)
+                      if (originalPrice != null && originalPrice > price)
                         Text(
-                          '₹${originalPrice.toStringAsFixed(originalPrice.truncateToDouble() == originalPrice ? 0 : 2)}',
+                          '৳${originalPrice.toStringAsFixed(originalPrice.truncateToDouble() == originalPrice ? 0 : 2)}',
                           style: GoogleFonts.inter(
                             fontSize: 10.5.sp,
                             fontWeight: FontWeight.w400,

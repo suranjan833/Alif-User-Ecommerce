@@ -122,6 +122,7 @@ class HomeView extends GetView<HomeController> {
                                     subtitle: 'Self-care essentials\nfor a fresh routine',
                                     bgColor: const Color(0xFFD4EFE8),
                                     imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=400&auto=format&fit=crop',
+                                    slug: 'bath-body',
                                   ),
                                   SizedBox(width: 12.w),
                                   _buildShowcaseCard(
@@ -130,6 +131,7 @@ class HomeView extends GetView<HomeController> {
                                         'Beauty essentials\nfor every look',
                                     bgColor: const Color(0xFFFDE2E4),
                                     imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop',
+                                    slug: 'makeup',
                                   ),
                                   SizedBox(width: 12.w),
                                   _buildShowcaseCard(
@@ -137,6 +139,7 @@ class HomeView extends GetView<HomeController> {
                                     subtitle: 'Fresh scents that\nlast all day',
                                     bgColor: const Color(0xFFE6E1FA),
                                     imageUrl: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=400&auto=format&fit=crop',
+                                    slug: 'fragrance',
                                   ),
                                 ],
                               ),
@@ -147,17 +150,28 @@ class HomeView extends GetView<HomeController> {
                             // 7. Level It Up Promo Banner
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16.w),
-                              child: Container(
-                                width: double.infinity,
-                                padding: EdgeInsets.all(16.w),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF232936),
-                                  borderRadius: BorderRadius.circular(16.r),
-                                ),
-                                child: Row(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10.r),
+                              child: InkWell(
+                                onTap: () {
+                                  Get.toNamed(
+                                    Routes.CATEGORY_PRODUCTS,
+                                    arguments: {
+                                      'name': "Men's Fashion",
+                                      'slug': 'fashion',
+                                    },
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(16.r),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(16.w),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF232936),
+                                    borderRadius: BorderRadius.circular(16.r),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(10.r),
                                       child: Image.network(
                                         'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=400&auto=format&fit=crop',
                                         width: 100.w,
@@ -265,6 +279,7 @@ class HomeView extends GetView<HomeController> {
                                 ),
                               ),
                             ),
+                          ),
 
                             SizedBox(height: 24.h),
 
@@ -347,6 +362,7 @@ class HomeView extends GetView<HomeController> {
   Widget _buildSuggestedProductsSection() {
     return Obx(() {
       final products = controller.currentCategory.products;
+      final isLoading = controller.isCategoryProductsLoading.value;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,32 +380,203 @@ class HomeView extends GetView<HomeController> {
                     color: AppColor.textPrimary,
                   ),
                 ),
-                Text(
-                  'See All',
-                  style: GoogleFonts.lato(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColor.textSecondary,
+                GestureDetector(
+                  onTap: () {
+                    Get.toNamed(
+                      Routes.CATEGORY_PRODUCTS,
+                      arguments: {
+                        'name': controller.currentCategory.name,
+                        'slug': controller.currentCategory.slug == 'all'
+                            ? ''
+                            : controller.currentCategory.slug,
+                      },
+                    );
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 2.w),
+                    child: Text(
+                      'See All',
+                      style: GoogleFonts.lato(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColor.primary,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           SizedBox(height: 14.h),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: List.generate(
-                products.length,
-                (index) => _buildProductCard(products[index], index),
+          if (isLoading)
+            _buildProductLoadingSkeleton()
+          else if (products.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: List.generate(
+                  products.length,
+                  (index) => _buildProductCard(products[index], index),
+                ),
+              ),
+            )
+          else
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 16.w),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: const Color(0xFFECEEF2)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44.r,
+                    height: 44.r,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF7E6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Iconsax.box,
+                        size: 22.r,
+                        color: AppColor.primaryDark,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'No products in ${controller.currentCategory.name} currently',
+                          style: GoogleFonts.lato(
+                            fontSize: 13.5.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColor.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'Check out all available categories and items',
+                          style: GoogleFonts.lato(
+                            fontSize: 12.sp,
+                            color: AppColor.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  ElevatedButton(
+                    onPressed: () => Get.toNamed(
+                      Routes.CATEGORY_PRODUCTS,
+                      arguments: {
+                        'name': controller.currentCategory.name,
+                        'slug': controller.currentCategory.slug == 'all'
+                            ? ''
+                            : controller.currentCategory.slug,
+                      },
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColor.primary,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14.w,
+                        vertical: 8.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                    ),
+                    child: Text(
+                      'Explore',
+                      style: GoogleFonts.lato(
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
         ],
       );
     });
+  }
+
+  Widget _buildProductLoadingSkeleton() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      physics: const NeverScrollableScrollPhysics(),
+      child: Row(
+        children: List.generate(
+          3,
+          (index) => Container(
+            width: 160.w,
+            height: 210.h,
+            margin: EdgeInsets.only(right: 14.w),
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    height: 85.h,
+                    width: 100.w,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                Container(
+                  height: 12.h,
+                  width: 120.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Container(
+                  height: 10.h,
+                  width: 70.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  height: 14.h,
+                  width: 60.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildProductCard(Map<String, dynamic> product, int index) {
@@ -694,31 +881,45 @@ class HomeView extends GetView<HomeController> {
 
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20.r),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 350),
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            child: Container(
-              key: ValueKey<String>(headerUrl),
-              width: double.infinity,
-              height: 220.h,
-              decoration: BoxDecoration(
-                color: controller.currentCategory.bgColor,
-              ),
-              child: Image.network(
-                headerUrl,
+        child: GestureDetector(
+          onTap: () {
+            Get.toNamed(
+              Routes.CATEGORY_PRODUCTS,
+              arguments: {
+                'name': controller.currentCategory.name,
+                'slug': controller.currentCategory.slug == 'all'
+                    ? ''
+                    : controller.currentCategory.slug,
+              },
+            );
+          },
+          behavior: HitTestBehavior.opaque,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.r),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: Container(
+                key: ValueKey<String>(headerUrl),
                 width: double.infinity,
                 height: 220.h,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFFF1F5F9),
-                  child: Center(
-                    child: Icon(
-                      Iconsax.image,
-                      size: 40.r,
-                      color: AppColor.textSecondary,
+                decoration: BoxDecoration(
+                  color: controller.currentCategory.bgColor,
+                ),
+                child: Image.network(
+                  headerUrl,
+                  width: double.infinity,
+                  height: 220.h,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: const Color(0xFFF1F5F9),
+                    child: Center(
+                      child: Icon(
+                        Iconsax.image,
+                        size: 40.r,
+                        color: AppColor.textSecondary,
+                      ),
                     ),
                   ),
                 ),
@@ -873,55 +1074,70 @@ class HomeView extends GetView<HomeController> {
     required String subtitle,
     required Color bgColor,
     required String imageUrl,
+    String? slug,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      width: 155.w,
-      height: 230.h,
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.lato(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w900,
-              color: AppColor.textPrimary,
-              height: 1.1,
+    return GestureDetector(
+      onTap: onTap ??
+          () {
+            Get.toNamed(
+              Routes.CATEGORY_PRODUCTS,
+              arguments: {
+                'name': title.replaceAll('\n', ' '),
+                'slug': slug ?? '',
+              },
+            );
+          },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 155.w,
+        height: 230.h,
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.lato(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w900,
+                color: AppColor.textPrimary,
+                height: 1.1,
+              ),
             ),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            subtitle,
-            style: GoogleFonts.lato(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w400,
-              color: AppColor.textSecondary,
-              height: 1.2,
+            SizedBox(height: 6.h),
+            Text(
+              subtitle,
+              style: GoogleFonts.lato(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w400,
+                color: AppColor.textSecondary,
+                height: 1.2,
+              ),
             ),
-          ),
-          const Spacer(),
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12.r),
-              child: Image.network(
-                imageUrl,
-                height: 100.h,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  Iconsax.image,
-                  size: 48.r,
-                  color: AppColor.textSecondary,
+            const Spacer(),
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: Image.network(
+                  imageUrl,
+                  height: 100.h,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Iconsax.image,
+                    size: 48.r,
+                    color: AppColor.textSecondary,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

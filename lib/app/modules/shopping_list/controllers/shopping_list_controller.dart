@@ -18,12 +18,7 @@ class ShoppingListItem {
 
 class ShoppingListController extends GetxController
     with SkeletonLoadingMixin {
-  final items = <ShoppingListItem>[
-    ShoppingListItem(id: '1', title: 'Milk & Bread', isCompleted: true),
-    ShoppingListItem(id: '2', title: 'Smart LED Bulb 2-Pack'),
-    ShoppingListItem(id: '3', title: 'Gaming Mouse Pad'),
-    ShoppingListItem(id: '4', title: 'Organic Olive Oil'),
-  ].obs;
+  final items = <ShoppingListItem>[].obs;
 
   @override
   void onInit() {

@@ -13,92 +13,7 @@ class TopBrandsController extends GetxController with SkeletonLoadingMixin {
   final searchController = TextEditingController();
   final searchQuery = ''.obs;
 
-  static final List<BrandModel> fallbackBrands = [
-    BrandModel(
-      id: 'b1',
-      name: 'Acer',
-      slug: 'acer',
-      logoUrl: '/brand-logos/acer.svg',
-    ),
-    BrandModel(
-      id: 'b2',
-      name: 'Adidas',
-      slug: 'adidas',
-      logoUrl: '/brand-logos/adidas.svg',
-    ),
-    BrandModel(
-      id: 'b3',
-      name: 'Apple',
-      slug: 'apple',
-      logoUrl: '/brand-logos/apple.svg',
-    ),
-    BrandModel(
-      id: 'b4',
-      name: 'Asus',
-      slug: 'asus',
-      logoUrl: '/brand-logos/asus.svg',
-    ),
-    BrandModel(
-      id: 'b5',
-      name: 'Dell',
-      slug: 'dell',
-      logoUrl: '/brand-logos/dell.svg',
-    ),
-    BrandModel(
-      id: 'b6',
-      name: 'HP',
-      slug: 'hp',
-      logoUrl: '/brand-logos/hp.svg',
-    ),
-    BrandModel(
-      id: 'b7',
-      name: 'Huawei',
-      slug: 'huawei',
-      logoUrl: '/brand-logos/huawei.svg',
-    ),
-    BrandModel(
-      id: 'b8',
-      name: 'IKEA',
-      slug: 'ikea',
-      logoUrl: '/brand-logos/ikea.svg',
-    ),
-    BrandModel(
-      id: 'b9',
-      name: 'JBL',
-      slug: 'jbl',
-      logoUrl: '/brand-logos/jbl.svg',
-    ),
-    BrandModel(
-      id: 'b10',
-      name: 'LG',
-      slug: 'lg',
-      logoUrl: '/brand-logos/lg.svg',
-    ),
-    BrandModel(
-      id: 'b11',
-      name: 'Nike',
-      slug: 'nike',
-      logoUrl: '/brand-logos/nike.svg',
-    ),
-    BrandModel(
-      id: 'b12',
-      name: 'Samsung',
-      slug: 'samsung',
-      logoUrl: '/brand-logos/samsung.svg',
-    ),
-    BrandModel(
-      id: 'b13',
-      name: 'Sony',
-      slug: 'sony',
-      logoUrl: '/brand-logos/sony.svg',
-    ),
-    BrandModel(
-      id: 'b14',
-      name: 'Xiaomi',
-      slug: 'xiaomi',
-      logoUrl: '/brand-logos/xiaomi.svg',
-    ),
-  ];
+
 
   @override
   void onInit() {
@@ -161,10 +76,10 @@ class TopBrandsController extends GetxController with SkeletonLoadingMixin {
           return;
         }
       }
-      allBrands.assignAll(fallbackBrands);
+      allBrands.clear();
       _applyFilter();
     } catch (_) {
-      allBrands.assignAll(fallbackBrands);
+      allBrands.clear();
       _applyFilter();
     } finally {
       isLoading.value = false;

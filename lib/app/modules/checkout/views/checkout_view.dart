@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
-import '../../../routes/app_pages.dart';
 import '../controllers/checkout_controller.dart';
 
 class CheckoutView extends GetView<CheckoutController> {
@@ -47,83 +46,176 @@ class CheckoutView extends GetView<CheckoutController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 1. Delivery Address Card
-                  _buildSectionHeader(
-                    'Delivery Address',
-                    actionText: 'Manage',
-                    onAction: () => Get.toNamed(Routes.MANAGE_ADDRESSES),
+                  Obx(
+                    () => _buildSectionHeader(
+                      'Delivery Address',
+                      actionText: controller.addresses.isNotEmpty ? '+ Add New' : null,
+                      onAction: () => controller.openAddAddressModal(context),
+                    ),
                   ),
                   SizedBox(height: 8.h),
-                  Obx(
-                    () => RadioGroup<int>(
+                  Obx(() {
+                    if (controller.isLoadingAddresses.value) {
+                      return Container(
+                        padding: EdgeInsets.all(20.r),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+
+                    if (controller.addresses.isEmpty) {
+                      return Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(18.r),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16.r),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 52.r,
+                              height: 52.r,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFF7E6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Iconsax.location,
+                                  size: 26.r,
+                                  color: AppColor.primaryDark,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 12.h),
+                            Text(
+                              'No Delivery Address',
+                              style: GoogleFonts.lato(
+                                fontSize: 15.5.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppColor.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: 4.h),
+                            Text(
+                              'Add your shipping address to proceed with order',
+                              style: GoogleFonts.lato(
+                                fontSize: 12.5.sp,
+                                color: AppColor.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 14.h),
+                            ElevatedButton.icon(
+                              onPressed: () =>
+                                  controller.openAddAddressModal(context),
+                              icon: const Icon(
+                                Iconsax.add,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              label: Text(
+                                'Add Delivery Address',
+                                style: GoogleFonts.lato(
+                                  fontSize: 13.5.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColor.primary,
+                                elevation: 0,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 18.w,
+                                  vertical: 10.h,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return RadioGroup<int>(
                       groupValue: controller.selectedAddressIndex.value,
                       onChanged: (val) =>
                           controller.selectAddress(val ?? 0),
                       child: Column(
-                      children: List.generate(controller.addresses.length, (
-                        index,
-                      ) {
-                        final addr = controller.addresses[index];
-                        final isSelected =
-                            controller.selectedAddressIndex.value == index;
+                        children: List.generate(controller.addresses.length, (
+                          index,
+                        ) {
+                          final addr = controller.addresses[index];
+                          final isSelected =
+                              controller.selectedAddressIndex.value == index;
 
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: 10.h),
-                          child: Material(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16.r),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16.r),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColor.primary
-                                      : Colors.transparent,
-                                  width: 1.5.w,
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 10.h),
+                            child: Material(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16.r),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppColor.primary
+                                        : Colors.transparent,
+                                    width: 1.5.w,
+                                  ),
                                 ),
-                              ),
-                              child: RadioListTile<int>(
-                                value: index,
-                                activeColor: AppColor.primaryDark,
-                                toggleable: false,
-                                title: Row(
-                                  children: [
-                                    Text(
-                                      addr['type'] as String,
-                                      style: GoogleFonts.lato(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColor.textPrimary,
+                                child: RadioListTile<int>(
+                                  value: index,
+                                  activeColor: AppColor.primaryDark,
+                                  toggleable: false,
+                                  title: Row(
+                                    children: [
+                                      Text(
+                                        addr['type'] as String? ?? 'Home',
+                                        style: GoogleFonts.lato(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColor.textPrimary,
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(width: 8.w),
-                                    Text(
-                                      addr['phone'] as String,
+                                      SizedBox(width: 8.w),
+                                      Text(
+                                        addr['phone'] as String? ?? '',
+                                        style: GoogleFonts.lato(
+                                          fontSize: 12.sp,
+                                          color: AppColor.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Padding(
+                                    padding: EdgeInsets.only(top: 4.h),
+                                    child: Text(
+                                      addr['address'] as String? ?? '',
                                       style: GoogleFonts.lato(
-                                        fontSize: 12.sp,
+                                        fontSize: 13.sp,
                                         color: AppColor.textSecondary,
+                                        height: 1.3,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: Padding(
-                                  padding: EdgeInsets.only(top: 4.h),
-                                  child: Text(
-                                    addr['address'] as String,
-                                    style: GoogleFonts.lato(
-                                      fontSize: 13.sp,
-                                      color: AppColor.textSecondary,
-                                      height: 1.3,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                   SizedBox(height: 14.h),
 
                   // 2. Order Items Card
@@ -186,7 +278,7 @@ class CheckoutView extends GetView<CheckoutController> {
                                         ),
                                         SizedBox(height: 2.h),
                                         Text(
-                                          'Qty: $qty • ₹${price.toStringAsFixed(2)}',
+                                          'Qty: $qty • ৳${price.toStringAsFixed(2)}',
                                           style: GoogleFonts.lato(
                                             fontSize: 12.sp,
                                             color: AppColor.textSecondary,
@@ -196,7 +288,7 @@ class CheckoutView extends GetView<CheckoutController> {
                                     ),
                                   ),
                                   Text(
-                                    '₹${(price * qty).toStringAsFixed(2)}',
+                                    '৳${(price * qty).toStringAsFixed(2)}',
                                     style: GoogleFonts.lato(
                                       fontSize: 14.5.sp,
                                       fontWeight: FontWeight.bold,
@@ -425,26 +517,26 @@ class CheckoutView extends GetView<CheckoutController> {
                           SizedBox(height: 12.h),
                           _buildDetailRow(
                             'Items Subtotal',
-                            '₹${controller.subtotal.value.toStringAsFixed(2)}',
+                            '৳${controller.subtotal.value.toStringAsFixed(2)}',
                           ),
                           SizedBox(height: 8.h),
                           _buildDetailRow(
                             'Delivery Charge',
                             controller.deliveryFee.value == 0
                                 ? 'FREE'
-                                : '₹${controller.deliveryFee.value.toStringAsFixed(2)}',
+                                : '৳${controller.deliveryFee.value.toStringAsFixed(2)}',
                             isGreen: controller.deliveryFee.value == 0,
                           ),
                           SizedBox(height: 8.h),
                           _buildDetailRow(
                             'Estimated Tax',
-                            '₹${controller.tax.value.toStringAsFixed(2)}',
+                            '৳${controller.tax.value.toStringAsFixed(2)}',
                           ),
                           if (controller.discount.value > 0) ...[
                             SizedBox(height: 8.h),
                             _buildDetailRow(
                               'Promo Discount',
-                              '- ₹${controller.discount.value.toStringAsFixed(2)}',
+                              '- ৳${controller.discount.value.toStringAsFixed(2)}',
                               isGreen: true,
                             ),
                           ],
@@ -453,7 +545,7 @@ class CheckoutView extends GetView<CheckoutController> {
                           SizedBox(height: 10.h),
                           _buildDetailRow(
                             'Total Amount',
-                            '₹${controller.finalPayable.toStringAsFixed(2)}',
+                            '৳${controller.finalPayable.toStringAsFixed(2)}',
                             isBold: true,
                           ),
                         ],
@@ -492,7 +584,7 @@ class CheckoutView extends GetView<CheckoutController> {
                       SizedBox(height: 2.h),
                       Obx(
                         () => Text(
-                          '₹${controller.finalPayable.toStringAsFixed(2)}',
+                          '৳${controller.finalPayable.toStringAsFixed(2)}',
                           style: GoogleFonts.lato(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.w800,
@@ -528,7 +620,7 @@ class CheckoutView extends GetView<CheckoutController> {
                               : (controller.selectedPaymentMethod.value ==
                                       'Nagad'
                                   ? 'Pay with Nagad'
-                                  : 'Place Order'),
+                                  : 'Place Order (COD)'),
                           style: GoogleFonts.lato(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.bold,

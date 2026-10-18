@@ -10,79 +10,6 @@ class CategoriesController extends GetxController {
 
   bool _hasLoadedOnce = false;
 
-  static final List<CategoryModel> fallbackCategories = [
-    CategoryModel(
-      name: 'Accessories',
-      image:
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFE8EDF5),
-      count: 128,
-    ),
-    CategoryModel(
-      name: 'Breakfast & Cereals',
-      image:
-          'https://images.unsplash.com/photo-1517673400267-0251440c45dc?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFFDF0DC),
-      count: 64,
-    ),
-    CategoryModel(
-      name: 'Clothing',
-      image:
-          'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFE9E2F7),
-      count: 212,
-    ),
-    CategoryModel(
-      name: 'Cosmetics',
-      image:
-          'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFFCE1E7),
-      count: 96,
-    ),
-    CategoryModel(
-      name: 'Drugstore & Health',
-      image:
-          'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFDFF2EA),
-      count: 85,
-    ),
-    CategoryModel(
-      name: 'Electronics',
-      image:
-          'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFDDEBFA),
-      count: 143,
-    ),
-    CategoryModel(
-      name: 'Food & Beverages',
-      image:
-          'https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFFCE8D8),
-      count: 177,
-    ),
-    CategoryModel(
-      name: 'Furniture',
-      image:
-          'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFEAE6DC),
-      count: 58,
-    ),
-    CategoryModel(
-      name: 'Shoes',
-      image:
-          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFE0F0F5),
-      count: 89,
-    ),
-    CategoryModel(
-      name: 'Skin & Hair Care',
-      image:
-          'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=400&auto=format&fit=crop',
-      accent: const Color(0xFFF4E4DC),
-      count: 134,
-    ),
-  ];
-
   @override
   void onInit() {
     super.onInit();
@@ -143,13 +70,13 @@ class CategoriesController extends GetxController {
           }
           categories.assignAll(parsed);
         } else {
-          categories.assignAll(fallbackCategories);
+          categories.clear();
         }
       } else {
-        categories.assignAll(fallbackCategories);
+        categories.clear();
       }
     } catch (_) {
-      categories.assignAll(fallbackCategories);
+      categories.clear();
     } finally {
       isLoading.value = false;
       _hasLoadedOnce = true;

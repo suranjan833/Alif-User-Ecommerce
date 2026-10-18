@@ -24,23 +24,9 @@ class CheckoutController extends GetxController {
   final promoCodeController = TextEditingController();
   final appliedPromoCode = ''.obs;
   final isProcessingPayment = false.obs;
+  final isLoadingAddresses = false.obs;
 
-  final addresses = <Map<String, dynamic>>[
-    {
-      'id': 'addr_1',
-      'name': 'Customer',
-      'type': 'Home',
-      'phone': '+880 1712-345678',
-      'address': 'House 12, Road 5, Dhanmondi, Dhaka - 1205',
-    },
-    {
-      'id': 'addr_2',
-      'name': 'Customer',
-      'type': 'Office',
-      'phone': '+880 1712-345678',
-      'address': 'Level 4, Alif World Tower, Gulshan-2, Dhaka - 1212',
-    },
-  ].obs;
+  final addresses = <Map<String, dynamic>>[].obs;
 
   double get finalPayable =>
       (subtotal.value + deliveryFee.value + tax.value - discount.value).clamp(
@@ -48,12 +34,12 @@ class CheckoutController extends GetxController {
         double.infinity,
       );
 
-  String get selectedAddressId {
+  String? get selectedAddressId {
     if (addresses.isNotEmpty && selectedAddressIndex.value < addresses.length) {
-      return addresses[selectedAddressIndex.value]['id']?.toString() ??
-          'addr_1';
+      final id = addresses[selectedAddressIndex.value]['id']?.toString();
+      if (id != null && id.isNotEmpty) return id;
     }
-    return 'default_addr';
+    return null;
   }
 
   String _mapPaymentMethodToApi(String method) {
@@ -106,6 +92,7 @@ class CheckoutController extends GetxController {
 
   /// 1. GET /addresses - Fetch saved addresses for user
   Future<void> fetchUserAddresses() async {
+    isLoadingAddresses.value = true;
     try {
       final response = await dioGet('addresses');
       if (response.statusCode == 200 && response.data != null) {
@@ -128,6 +115,7 @@ class CheckoutController extends GetxController {
               parsed.add({
                 'id': item['id']?.toString() ?? '',
                 'name':
+                    item['fullName']?.toString() ??
                     item['recipientName']?.toString() ??
                     item['name']?.toString() ??
                     'Customer',
@@ -140,28 +128,39 @@ class CheckoutController extends GetxController {
                     item['addressLine']?.toString() ??
                     item['address']?.toString() ??
                     '',
+                'city': item['district']?.toString() ?? item['city']?.toString() ?? '',
+                'division': item['division']?.toString() ?? '',
+                'postalCode': item['postalCode']?.toString() ?? '',
               });
             }
           }
           if (parsed.isNotEmpty) {
             addresses.assignAll(parsed);
+            if (selectedAddressIndex.value >= addresses.length) {
+              selectedAddressIndex.value = 0;
+            }
           }
         }
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      isLoadingAddresses.value = false;
+    }
   }
 
   /// 2. POST /checkout/quote - Fetch price quote from API
   Future<void> fetchQuote() async {
     try {
+      final reqData = <String, dynamic>{
+        'paymentMethod': _mapPaymentMethodToApi(selectedPaymentMethod.value),
+        if (selectedAddressId != null) 'addressId': selectedAddressId,
+        if (appliedPromoCode.value.isNotEmpty)
+          'couponCode': appliedPromoCode.value,
+      };
+
       final response = await dioPost(
         endUrl: 'checkout/quote',
-        data: {
-          'paymentMethod': _mapPaymentMethodToApi(selectedPaymentMethod.value),
-          'addressId': selectedAddressId,
-          if (appliedPromoCode.value.isNotEmpty)
-            'couponCode': appliedPromoCode.value,
-        },
+        data: reqData,
         isJson: true,
       );
 
@@ -179,6 +178,259 @@ class CheckoutController extends GetxController {
         }
       }
     } catch (_) {}
+  }
+
+  /// Open modal to dynamically add an address
+  void openAddAddressModal(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final streetCtrl = TextEditingController();
+    final cityCtrl = TextEditingController();
+    final isSaving = false.obs;
+    final selectedType = 'Home'.obs;
+
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Add Delivery Address',
+                style: GoogleFonts.lato(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.textPrimary,
+                ),
+              ),
+              SizedBox(height: 14.h),
+
+              // Address Type
+              Obx(
+                () => Row(
+                  children: ['Home', 'Office', 'Other'].map((type) {
+                    final isSel = selectedType.value == type;
+                    return Padding(
+                      padding: EdgeInsets.only(right: 8.w),
+                      child: ChoiceChip(
+                        label: Text(type),
+                        selected: isSel,
+                        onSelected: (val) => selectedType.value = type,
+                        selectedColor: AppColor.primary,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        labelStyle: GoogleFonts.lato(
+                          fontSize: 12.sp,
+                          fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                          color: isSel ? Colors.white : AppColor.textPrimary,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: 12.h),
+
+              // Recipient Name
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Recipient Full Name *',
+                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FA),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10.h),
+
+              // Phone Number
+              TextField(
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number (e.g. 017xxxxxxxx) *',
+                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FA),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10.h),
+
+              // Delivery Address
+              TextField(
+                controller: streetCtrl,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'Street Address / House / Flat *',
+                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FA),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10.h),
+
+              // City / Area
+              TextField(
+                controller: cityCtrl,
+                decoration: InputDecoration(
+                  labelText: 'City / District / Area *',
+                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FA),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20.h),
+
+              // Save Button
+              Obx(
+                () => SizedBox(
+                  width: double.infinity,
+                  height: 48.h,
+                  child: ElevatedButton(
+                    onPressed: isSaving.value
+                        ? null
+                        : () async {
+                            final name = nameCtrl.text.trim();
+                            final phone = phoneCtrl.text.trim();
+                            final street = streetCtrl.text.trim();
+                            final city = cityCtrl.text.trim();
+
+                            if (name.isEmpty ||
+                                phone.isEmpty ||
+                                street.isEmpty ||
+                                city.isEmpty) {
+                              Get.snackbar(
+                                'Missing Information',
+                                'Please fill all required fields',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: AppColor.error,
+                                colorText: Colors.white,
+                              );
+                              return;
+                            }
+
+                            isSaving.value = true;
+                            final fullAddr = '$street, $city';
+                            String newId =
+                                'addr_${DateTime.now().millisecondsSinceEpoch}';
+
+                            try {
+                              final response = await dioPost(
+                                endUrl: 'addresses',
+                                data: {
+                                  'label': selectedType.value,
+                                  'fullName': name,
+                                  'phone': phone,
+                                  'addressLine': street,
+                                  'division': city,
+                                  'district': city,
+                                  'upazila': city,
+                                  'postalCode': '1000',
+                                  'isDefault': addresses.isEmpty,
+                                },
+                                isJson: true,
+                              );
+                              if (response.statusCode == 200 ||
+                                  response.statusCode == 201) {
+                                dynamic rawData = response.data;
+                                if (rawData is Map &&
+                                    rawData.containsKey('data')) {
+                                  rawData = rawData['data'];
+                                }
+                                if (rawData is Map && rawData['id'] != null) {
+                                  newId = rawData['id'].toString();
+                                }
+                              }
+                            } catch (_) {}
+
+                            addresses.add({
+                              'id': newId,
+                              'name': name,
+                              'type': selectedType.value,
+                              'phone': phone,
+                              'address': fullAddr,
+                            });
+                            selectedAddressIndex.value =
+                                addresses.length - 1;
+                            isSaving.value = false;
+
+                            Get.back(); // close bottomsheet
+                            fetchQuote();
+
+                            Get.snackbar(
+                              'Address Saved',
+                              'Delivery address added successfully',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: const Color(0xFF16A34A),
+                              colorText: Colors.white,
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColor.primary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                    child: isSaving.value
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            'Save & Deliver Here',
+                            style: GoogleFonts.lato(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10.h),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
   }
 
   void applyPromoCode() {
@@ -206,6 +458,20 @@ class CheckoutController extends GetxController {
 
   /// 3. POST /checkout/place - Place order
   Future<void> placeOrder() async {
+    if (addresses.isEmpty) {
+      Get.snackbar(
+        'Address Required',
+        'Please add a delivery address to complete your order',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColor.error,
+        colorText: Colors.white,
+      );
+      if (Get.context != null) {
+        openAddAddressModal(Get.context!);
+      }
+      return;
+    }
+
     if (selectedPaymentMethod.value == 'bKash' ||
         selectedPaymentMethod.value == 'Nagad' ||
         selectedPaymentMethod.value == 'Razorpay') {
@@ -224,7 +490,7 @@ class CheckoutController extends GetxController {
         endUrl: 'checkout/place',
         data: {
           'paymentMethod': apiPayment,
-          'addressId': selectedAddressId,
+          if (selectedAddressId != null) 'addressId': selectedAddressId,
           if (appliedPromoCode.value.isNotEmpty)
             'couponCode': appliedPromoCode.value,
           'returnUrl': 'https://alifworld.vercel.app/order-success',
@@ -458,9 +724,12 @@ class CheckoutController extends GetxController {
     required String paymentMethod,
     String? customOrderId,
   }) {
-    final orderId =
+    final orderId = customOrderId ??
         '#ALF-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-    final selectedAddr = addresses[selectedAddressIndex.value];
+    final selectedAddr = (addresses.isNotEmpty &&
+            selectedAddressIndex.value < addresses.length)
+        ? addresses[selectedAddressIndex.value]
+        : <String, dynamic>{'address': 'Customer Delivery Address'};
 
     // Clear Cart if order was placed from Shopping Bag
     if (!isDirectBuy.value && Get.isRegistered<BagController>()) {
@@ -475,7 +744,7 @@ class CheckoutController extends GetxController {
         'paymentMethod': paymentMethod,
         'totalAmount': finalPayable,
         'itemCount': items.length,
-        'address': selectedAddr['address'],
+        'address': selectedAddr['address'] ?? '',
         'items': items,
       },
     );

@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../../../data/widgets/skeleton_box.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/discover_controller.dart';
 
 class DiscoverView extends GetView<DiscoverController> {
@@ -82,38 +83,67 @@ class DiscoverView extends GetView<DiscoverController> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w),
                 child: Obx(
-                  () => Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left Column Posts (Index 0, 2...)
-                      Expanded(
-                        child: Column(
-                          children: [
-                            if (controller.posts.isNotEmpty)
-                              _buildPostCard(controller.posts[0], 0),
-                            if (controller.posts.length > 2) ...[
-                              SizedBox(height: 16.h),
-                              _buildPostCard(controller.posts[2], 2),
-                            ],
-                          ],
+                  () {
+                    if (controller.posts.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40.h),
+                          child: Text(
+                            'No items found in this category',
+                            style: GoogleFonts.lato(
+                              fontSize: 14.sp,
+                              color: AppColor.textSecondary,
+                            ),
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 14.w),
-                      // Right Column Posts (Index 1, 3...)
-                      Expanded(
-                        child: Column(
-                          children: [
-                            if (controller.posts.length > 1)
-                              _buildPostCard(controller.posts[1], 1),
-                            if (controller.posts.length > 3) ...[
-                              SizedBox(height: 16.h),
-                              _buildPostCard(controller.posts[3], 3),
+                      );
+                    }
+
+                    final leftIndices = <int>[];
+                    final rightIndices = <int>[];
+                    for (int i = 0; i < controller.posts.length; i++) {
+                      if (i % 2 == 0) {
+                        leftIndices.add(i);
+                      } else {
+                        rightIndices.add(i);
+                      }
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Column
+                        Expanded(
+                          child: Column(
+                            children: [
+                              for (int i = 0; i < leftIndices.length; i++) ...[
+                                if (i > 0) SizedBox(height: 16.h),
+                                _buildPostCard(
+                                  controller.posts[leftIndices[i]],
+                                  leftIndices[i],
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                        SizedBox(width: 14.w),
+                        // Right Column
+                        Expanded(
+                          child: Column(
+                            children: [
+                              for (int i = 0; i < rightIndices.length; i++) ...[
+                                if (i > 0) SizedBox(height: 16.h),
+                                _buildPostCard(
+                                  controller.posts[rightIndices[i]],
+                                  rightIndices[i],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
 
@@ -192,27 +222,38 @@ class DiscoverView extends GetView<DiscoverController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Media Card
-        Container(
-          width: double.infinity,
-          height: index == 0
-              ? 260.h
-              : index == 1
-              ? 220.h
-              : index == 2
-              ? 230.h
-              : 270.h,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16.r),
-            color: Colors.black,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+        GestureDetector(
+          onTap: () {
+            final prod = post['productModel'];
+            if (prod != null) {
+              Get.toNamed(Routes.PRODUCT_DETAILS,
+                  arguments: prod.toDetailsMap());
+            } else {
+              Get.toNamed(Routes.PRODUCT_DETAILS,
+                  arguments: post['raw'] ?? post);
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            height: (index % 4 == 0)
+                ? 260.h
+                : (index % 4 == 1)
+                    ? 220.h
+                    : (index % 4 == 2)
+                        ? 230.h
+                        : 270.h,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
+              color: Colors.black,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
           child: Stack(
             children: [
               // Main Image
@@ -290,6 +331,7 @@ class DiscoverView extends GetView<DiscoverController> {
               ),
             ],
           ),
+        ),
         ),
 
         SizedBox(height: 8.h),

@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../../../data/widgets/skeleton_box.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/bag_controller.dart';
 import '../models/cart_model.dart';
 
@@ -54,42 +55,74 @@ class BagView extends GetView<BagController> {
         }
         if (controller.cartItems.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80.r,
-                  height: 80.r,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFF7E6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Iconsax.shopping_bag,
-                      size: 42.r,
-                      color: AppColor.primaryDark,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80.r,
+                    height: 80.r,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF7E6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Iconsax.shopping_bag,
+                        size: 42.r,
+                        color: AppColor.primaryDark,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(height: 16.h),
-                Text(
-                  'Your Shopping Bag is Empty',
-                  style: GoogleFonts.lato(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColor.textPrimary,
+                  SizedBox(height: 16.h),
+                  Text(
+                    'Your Shopping Bag is Empty',
+                    style: GoogleFonts.lato(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColor.textPrimary,
+                    ),
                   ),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  'Explore products and add them to your bag',
-                  style: GoogleFonts.lato(
-                    fontSize: 13.5.sp,
-                    color: AppColor.textSecondary,
+                  SizedBox(height: 6.h),
+                  Text(
+                    'Explore products and add them to your bag',
+                    style: GoogleFonts.lato(
+                      fontSize: 13.5.sp,
+                      color: AppColor.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                  SizedBox(height: 20.h),
+                  ElevatedButton.icon(
+                    onPressed: () => Get.toNamed(Routes.HOME),
+                    icon: Icon(
+                      Iconsax.shop,
+                      size: 18.r,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      'Explore Products',
+                      style: GoogleFonts.lato(
+                        fontSize: 14.5.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColor.primary,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 12.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -132,27 +165,27 @@ class BagView extends GetView<BagController> {
                           SizedBox(height: 12.h),
                           _buildSummaryRow(
                             'Subtotal',
-                            '₹${controller.subtotal.toStringAsFixed(2)}',
+                            '৳${controller.subtotal.toStringAsFixed(2)}',
                           ),
                           SizedBox(height: 8.h),
                           _buildSummaryRow(
                             'Delivery Fee',
                             controller.deliveryFee == 0
                                 ? 'FREE'
-                                : '₹${controller.deliveryFee.toStringAsFixed(2)}',
+                                : '৳${controller.deliveryFee.toStringAsFixed(2)}',
                             isGreen: controller.deliveryFee == 0,
                           ),
                           SizedBox(height: 8.h),
                           _buildSummaryRow(
                             'Estimated Tax (5%)',
-                            '₹${controller.tax.toStringAsFixed(2)}',
+                            '৳${controller.tax.toStringAsFixed(2)}',
                           ),
                           SizedBox(height: 10.h),
                           const Divider(color: Color(0xFFF1F5F9), height: 1),
                           SizedBox(height: 10.h),
                           _buildSummaryRow(
                             'Total Payable',
-                            '₹${controller.totalAmount.toStringAsFixed(2)}',
+                            '৳${controller.totalAmount.toStringAsFixed(2)}',
                             isBold: true,
                           ),
                         ],
@@ -189,7 +222,7 @@ class BagView extends GetView<BagController> {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          '₹${controller.totalAmount.toStringAsFixed(2)}',
+                          '৳${controller.totalAmount.toStringAsFixed(2)}',
                           style: GoogleFonts.lato(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.w800,
@@ -306,7 +339,7 @@ class BagView extends GetView<BagController> {
                 ),
                 SizedBox(height: 6.h),
                 Text(
-                  '₹${price.toStringAsFixed(2)}',
+                  '৳${price.toStringAsFixed(2)}',
                   style: GoogleFonts.lato(
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w800,

@@ -2,45 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/config/functions/dio_function/my_dio.dart';
 import '../../../data/mixins/skeleton_loading_mixin.dart';
+import '../../bag/controllers/bag_controller.dart';
 
-class MyWishlistController extends GetxController
-    with SkeletonLoadingMixin {
-  final wishlistItems = <Map<String, dynamic>>[
-    {
-      'id': 'w1',
-      'title': 'Wireless Noise Headphones',
-      'price': '₹199.99',
-      'originalPrice': '₹249.99',
-      'discount': '20% OFF',
-      'image': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      'id': 'w2',
-      'title': 'Smart Sports Watch',
-      'price': '₹169.99',
-      'originalPrice': '₹199.99',
-      'discount': '15% OFF',
-      'image': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=400&auto=format&fit=crop',
-    },
-    {
-      'id': 'w3',
-      'title': 'Modern L-Shaped Sofa',
-      'price': '₹599.99',
-      'originalPrice': '₹699.99',
-      'discount': '14% OFF',
-      'image': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=400&auto=format&fit=crop',
-    },
-  ].obs;
+class MyWishlistController extends GetxController with SkeletonLoadingMixin {
+  final wishlistItems = <Map<String, dynamic>>[].obs;
 
   @override
   void onInit() {
     super.onInit();
-    initSkeletonLoading();
+    fetchWishlist();
   }
 
-  void removeItem(String id) {
+  Future<void> fetchWishlist() async {
+    initSkeletonLoading();
+    try {
+      final response = await dioGet('wishlist');
+      if (response.statusCode == 200 && response.data != null) {
+        dynamic rawData = response.data;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+          rawData = rawData['data'];
+        }
+        if (rawData is List) {
+          final items = rawData.map<Map<String, dynamic>>((e) {
+            final p = (e is Map<String, dynamic> && e.containsKey('product'))
+                ? e['product']
+                : e;
+            final priceMinor = p['priceMinor'] ?? 0;
+            final price = (priceMinor / 100.0).toStringAsFixed(2);
+            final images = p['images'] as List?;
+            final img = (images != null && images.isNotEmpty)
+                ? images.first.toString()
+                : '';
+            return {
+              'id': p['id']?.toString() ?? '',
+              'title': p['title']?.toString() ?? p['name']?.toString() ?? '',
+              'price': '৳$price',
+              'originalPrice': '',
+              'discount': '',
+              'image': img,
+              'slug': p['slug']?.toString() ?? '',
+              'raw': p,
+            };
+          }).toList();
+          wishlistItems.assignAll(items);
+        } else {
+          wishlistItems.clear();
+        }
+      } else {
+        wishlistItems.clear();
+      }
+    } catch (_) {
+      wishlistItems.clear();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> removeItem(String id) async {
     wishlistItems.removeWhere((item) => item['id'] == id);
+    try {
+      await dioDelete('wishlist?productId=$id');
+    } catch (_) {}
     Get.snackbar(
       'Removed',
       'Item removed from wishlist',
@@ -52,12 +76,15 @@ class MyWishlistController extends GetxController
   }
 
   void addToBag(Map<String, dynamic> item) {
+    if (Get.isRegistered<BagController>()) {
+      Get.find<BagController>().addItemToBag(item);
+    }
     Get.snackbar(
       'Added to Bag',
       '${item['title']} moved to bag',
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppColor.primary,
-      colorText: Colors.black,
+      colorText: Colors.white,
       duration: const Duration(seconds: 2),
     );
   }

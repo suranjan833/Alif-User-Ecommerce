@@ -4,7 +4,7 @@ import '../../../data/config/functions/dio_function/my_dio.dart';
 import '../models/product_model.dart';
 
 class CategoryProductsController extends GetxController {
-  final categoryName = 'Electronics'.obs;
+  final categoryName = 'All Categories'.obs;
   final categoryImage = ''.obs;
   final categorySlug = ''.obs;
   final brandSlug = ''.obs;
@@ -16,107 +16,14 @@ class CategoryProductsController extends GetxController {
     {
       'id': 'all',
       'name': 'All',
+      'slug': '',
       'icon': 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png',
-    },
-    {
-      'id': 'cameras',
-      'name': 'Cameras &\nSecurity',
-      'icon': 'https://cdn-icons-png.flaticon.com/512/2950/2950711.png',
-    },
-    {
-      'id': 'computers',
-      'name': 'Computers\n& Audio',
-      'icon': 'https://cdn-icons-png.flaticon.com/512/3067/3067257.png',
-    },
-    {
-      'id': 'gaming',
-      'name': 'Gaming\nConsoles',
-      'icon': 'https://cdn-icons-png.flaticon.com/512/1410/1410332.png',
-    },
-    {
-      'id': 'mobile',
-      'name': 'Mobile &\nAccessories',
-      'icon': 'https://cdn-icons-png.flaticon.com/512/644/644458.png',
-    },
-    {
-      'id': 'appliances',
-      'name': 'Small Home\nAppliances',
-      'icon': 'https://cdn-icons-png.flaticon.com/512/3076/3076042.png',
-    },
-    {
-      'id': 'smart_home',
-      'name': 'Smart Home\nDevices',
-      'icon': 'https://cdn-icons-png.flaticon.com/512/2933/2933245.png',
     },
   ].obs;
 
   final allProducts = <ProductModel>[].obs;
-
-  static final List<ProductModel> fallbackProducts = [
-    ProductModel(
-      id: 'p1',
-      brand: 'Amazon',
-      title: 'Smart Color Bulb 2 Pack',
-      discount: '20.01% OFF',
-      price: 19.99,
-      originalPrice: 24.99,
-      image: 'https://images.unsplash.com/photo-1550525811-e5869dd03032?q=80&w=400&auto=format&fit=crop',
-      badge: '2 Pack',
-      subCategoryId: 'smart_home',
-    ),
-    ProductModel(
-      id: 'p2',
-      brand: 'Logitech',
-      title: 'Gaming Mouse 16000 DPI',
-      discount: '14.29% OFF',
-      price: 29.99,
-      originalPrice: 34.99,
-      image: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?q=80&w=400&auto=format&fit=crop',
-      subCategoryId: 'computers',
-    ),
-    ProductModel(
-      id: 'p3',
-      brand: 'Amazon',
-      title: 'Wi-Fi Security Camera 2K',
-      discount: '25.01% OFF',
-      price: 29.99,
-      originalPrice: 39.99,
-      image: 'https://images.unsplash.com/photo-1557862921-37829c790f19?q=80&w=400&auto=format&fit=crop',
-      subCategoryId: 'cameras',
-    ),
-    ProductModel(
-      id: 'p4',
-      brand: 'Microsoft',
-      title: 'Gaming Controller Wireless',
-      discount: '18.19% OFF',
-      price: 44.99,
-      originalPrice: 54.99,
-      image: 'https://images.unsplash.com/photo-1600080972464-8e5f35f63d08?q=80&w=400&auto=format&fit=crop',
-      subCategoryId: 'gaming',
-    ),
-    ProductModel(
-      id: 'p5',
-      brand: 'Ninja',
-      title: 'Air Fryer Max XL 5.5L',
-      discount: '15.00% OFF',
-      price: 79.99,
-      originalPrice: 94.99,
-      image: 'https://images.unsplash.com/photo-1585515320310-259814833e62?q=80&w=400&auto=format&fit=crop',
-      subCategoryId: 'appliances',
-    ),
-    ProductModel(
-      id: 'p6',
-      brand: 'JBL',
-      title: 'Flip 6 Portable Speaker',
-      discount: '10.00% OFF',
-      price: 89.99,
-      originalPrice: 99.99,
-      image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?q=80&w=400&auto=format&fit=crop',
-      subCategoryId: 'computers',
-    ),
-  ];
-
   final isLoading = true.obs;
+  final isProductsLoading = false.obs;
   bool _hasLoadedOnce = false;
 
   @override
@@ -141,40 +48,179 @@ class CategoryProductsController extends GetxController {
       if (args.containsKey('children') && args['children'] is List) {
         final childrenList = args['children'] as List;
         if (childrenList.isNotEmpty) {
-          final dynSubCats = <Map<String, dynamic>>[
-            {
-              'id': 'all',
-              'name': 'All',
-              'icon': 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png',
-            },
-          ];
-          for (var c in childrenList) {
-            if (c is Map) {
-              dynSubCats.add({
-                'id': c['id']?.toString() ?? '',
-                'name': c['name']?.toString() ?? '',
-                'icon': 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png',
-              });
-            }
-          }
-          subCategories.assignAll(dynSubCats);
+          _populateSubCategories(childrenList);
         }
       }
     }
-    if (categoryImage.isEmpty) {
-      categoryImage.value =
-          'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=400&auto=format&fit=crop';
-    }
-    _loadProducts();
+
+    _initialize();
   }
 
-  /// API Function code placed directly in Controller
-  Future<void> _loadProducts() async {
+  bool get isBrandView => brandSlug.value.isNotEmpty;
+  bool get showSubCategorySidebar => !isBrandView && subCategories.length > 1;
+
+  Future<void> _initialize() async {
     isLoading.value = true;
     try {
-      final endpoint = brandSlug.value.isNotEmpty
-          ? 'catalog/search?brand=${brandSlug.value}'
-          : 'catalog/search?category=${categorySlug.value.isNotEmpty ? categorySlug.value : categoryName.value.toLowerCase()}';
+      // If viewing a category (not a brand) and no subcategories were passed, fetch from /catalog/categories
+      if (!isBrandView && subCategories.length <= 1 && categorySlug.value.isNotEmpty) {
+        await _fetchSubCategoriesFromApi();
+      }
+      await _loadProductsForSelected();
+    } finally {
+      isLoading.value = false;
+      _hasLoadedOnce = true;
+    }
+  }
+
+  void _populateSubCategories(List childrenList, {String? parentSlug}) {
+    final rootSlug = parentSlug ?? categorySlug.value;
+    final dynSubCats = <Map<String, dynamic>>[
+      {
+        'id': 'all',
+        'name': 'All',
+        'slug': rootSlug,
+        'icon': 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png',
+      },
+    ];
+    for (var c in childrenList) {
+      if (c is Map) {
+        final slug = c['slug']?.toString() ?? '';
+        final name = c['name']?.toString() ?? '';
+        dynSubCats.add({
+          'id': c['id']?.toString() ?? slug,
+          'name': name,
+          'slug': slug,
+          'icon': _getIconForSubcategory(slug, c['imageUrl']?.toString() ?? c['image']?.toString()),
+        });
+      }
+    }
+    subCategories.assignAll(dynSubCats);
+  }
+
+  String _getIconForSubcategory(String slug, String? existingIcon) {
+    if (existingIcon != null && existingIcon.isNotEmpty && !existingIcon.endsWith('.svg')) {
+      if (existingIcon.startsWith('http')) return existingIcon;
+      return 'https://alifworld.vercel.app$existingIcon';
+    }
+    switch (slug.toLowerCase()) {
+      case 'mobile-phones':
+      case 'mobile':
+        return 'https://cdn-icons-png.flaticon.com/512/644/644458.png';
+      case 'laptops-computers':
+      case 'computers':
+      case 'tablets':
+        return 'https://cdn-icons-png.flaticon.com/512/3067/3067257.png';
+      case 'cameras-drones':
+      case 'cameras':
+        return 'https://cdn-icons-png.flaticon.com/512/2950/2950711.png';
+      case 'audio-headphones':
+      case 'audio':
+        return 'https://cdn-icons-png.flaticon.com/512/3067/3067257.png';
+      case 'wearables':
+        return 'https://cdn-icons-png.flaticon.com/512/2933/2933245.png';
+      case 'home-appliances':
+      case 'small-appliances':
+        return 'https://cdn-icons-png.flaticon.com/512/3076/3076042.png';
+      case 'gaming':
+      case 'video-games':
+        return 'https://cdn-icons-png.flaticon.com/512/1410/1410332.png';
+      case 'footwear':
+      case 'shoes':
+        return 'https://cdn-icons-png.flaticon.com/512/5499/5499206.png';
+      case 'mens-fashion':
+      case 'clothing':
+        return 'https://cdn-icons-png.flaticon.com/512/3531/3531744.png';
+      case 'womens-fashion':
+        return 'https://cdn-icons-png.flaticon.com/512/3531/3531804.png';
+      default:
+        return 'https://cdn-icons-png.flaticon.com/512/3081/3081986.png';
+    }
+  }
+
+  Future<void> _fetchSubCategoriesFromApi() async {
+    try {
+      final response = await dioGet('catalog/categories');
+      if (response.statusCode == 200 && response.data != null) {
+        dynamic rawData = response.data;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+          rawData = rawData['data'];
+        }
+        List? catList;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('categories')) {
+          catList = rawData['categories'] as List?;
+        } else if (rawData is List) {
+          catList = rawData;
+        }
+
+        if (catList != null) {
+          final currentSlug = categorySlug.value.toLowerCase();
+          final currentName = categoryName.value.toLowerCase();
+
+          for (var item in catList) {
+            if (item is Map) {
+              final s = item['slug']?.toString().toLowerCase() ?? '';
+              final n = item['name']?.toString().toLowerCase() ?? '';
+              final children = item['children'] as List?;
+
+              if (s == currentSlug || n == currentName || s.contains(currentSlug) || currentSlug.contains(s)) {
+                if (children != null && children.isNotEmpty) {
+                  _populateSubCategories(children, parentSlug: s);
+                  break;
+                }
+              }
+
+              // Check if requested category is a subcategory
+              if (children != null && children.isNotEmpty) {
+                final matchedChild = children.firstWhere(
+                  (c) =>
+                      c is Map &&
+                      (c['slug']?.toString().toLowerCase() == currentSlug ||
+                          c['name']?.toString().toLowerCase() == currentName),
+                  orElse: () => null,
+                );
+
+                if (matchedChild != null) {
+                  _populateSubCategories(children, parentSlug: s);
+                  final targetSlug = matchedChild['slug']?.toString() ?? '';
+                  final foundIdx = subCategories.indexWhere(
+                    (el) => el['slug']?.toString() == targetSlug,
+                  );
+                  if (foundIdx != -1) {
+                    selectedSubCategoryIndex.value = foundIdx;
+                  }
+                  categoryName.value = item['name']?.toString() ?? categoryName.value;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Load live products strictly from GET /catalog/search
+  Future<void> _loadProductsForSelected() async {
+    isProductsLoading.value = true;
+    try {
+      String endpoint;
+      if (brandSlug.value.isNotEmpty) {
+        endpoint = 'catalog/search?brand=${brandSlug.value}';
+      } else {
+        String targetCategory = categorySlug.value;
+        if (selectedSubCategoryIndex.value > 0 &&
+            selectedSubCategoryIndex.value < subCategories.length) {
+          final subSlug = subCategories[selectedSubCategoryIndex.value]['slug']?.toString();
+          if (subSlug != null && subSlug.isNotEmpty) {
+            targetCategory = subSlug;
+          }
+        }
+        endpoint = targetCategory.isNotEmpty
+            ? 'catalog/search?category=$targetCategory'
+            : 'catalog/search';
+      }
+
       final response = await dioGet(endpoint);
       if (response.statusCode == 200 && response.data != null) {
         dynamic rawData = response.data;
@@ -188,46 +234,41 @@ class CategoryProductsController extends GetxController {
           productList = rawData;
         }
 
-        if (productList != null && productList.isNotEmpty) {
+        if (productList != null) {
           allProducts.value = productList
-              .map((item) => ProductModel.fromJson(item as Map<String, dynamic>))
+              .whereType<Map<String, dynamic>>()
+              .map((item) => ProductModel.fromJson(item))
               .toList();
         } else {
-          allProducts.value = fallbackProducts;
+          allProducts.clear();
         }
       } else {
-        allProducts.value = fallbackProducts;
+        allProducts.clear();
       }
     } catch (_) {
-      allProducts.value = fallbackProducts;
+      allProducts.clear();
     } finally {
-      isLoading.value = false;
-      _hasLoadedOnce = true;
+      isProductsLoading.value = false;
     }
   }
 
   Future<void> refreshProducts() async {
-    await _loadProducts();
+    await _loadProductsForSelected();
   }
 
   bool get hasLoadedOnce => _hasLoadedOnce;
 
-  List<ProductModel> get filteredProducts {
-    if (selectedSubCategoryIndex.value == 0) {
-      return allProducts;
-    }
-    final selectedId = subCategories[selectedSubCategoryIndex.value]['id'];
-    final matching =
-        allProducts.where((p) => p.subCategoryId == selectedId).toList();
-    return matching.isNotEmpty ? matching : allProducts;
-  }
+  List<ProductModel> get filteredProducts => allProducts;
 
-  int get visibleItemCount => filteredProducts.length;
+  int get visibleItemCount => allProducts.length;
 
   int get totalItemCount => allProducts.length;
 
   void selectSubCategory(int index) {
-    selectedSubCategoryIndex.value = index;
+    if (index >= 0 && index < subCategories.length && index != selectedSubCategoryIndex.value) {
+      selectedSubCategoryIndex.value = index;
+      _loadProductsForSelected();
+    }
   }
 
   void toggleWishlist(String productId) {

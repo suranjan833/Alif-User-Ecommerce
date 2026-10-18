@@ -12,6 +12,7 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
   final currentBannerIndex = 0.obs;
   final currentLocation = 'Bakali coloni, Vijay Nagar, Bhuj, Gujar...'.obs;
   final isFetchingLocation = false.obs;
+  final isCategoryProductsLoading = false.obs;
 
   final showcase = Rxn<ShowcaseModel>();
 
@@ -149,20 +150,7 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
           final liveProducts = <Map<String, dynamic>>[];
           for (var rail in model.rails) {
             for (var prod in rail.products) {
-              liveProducts.add({
-                'id': prod.id,
-                'title': prod.name,
-                'brand': prod.brandName ?? 'Alif',
-                'discount': prod.discount,
-                'price': '₹${prod.price.toStringAsFixed(2)}',
-                'originalPrice': prod.originalPrice != null
-                    ? '₹${prod.originalPrice!.toStringAsFixed(2)}'
-                    : '₹${(prod.price * 1.15).toStringAsFixed(2)}',
-                'image': prod.displayImage.isNotEmpty
-                    ? prod.displayImage
-                    : 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=400&auto=format&fit=crop',
-                'isFavorite': false,
-              });
+              liveProducts.add(prod.toDetailsMap());
             }
           }
           if (liveProducts.isNotEmpty) {
@@ -242,47 +230,11 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
       buttonColor: const Color(0xFF3760A5),
       subtitleColor: const Color(0xFF5A6578),
       isScriptSubtitle: true,
-      products: [
-        {
-          'title': 'Modern L-Shaped Sofa',
-          'discount': '14.29% OFF',
-          'price': '₹599.99',
-          'originalPrice': '₹699.99',
-          'image':
-              'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=400&auto=format&fit=crop',
-          'isFavorite': false,
-        },
-        {
-          'title': 'Upholstered Dining Chair',
-          'discount': '15.39% OFF',
-          'price': '₹109.99',
-          'originalPrice': '₹129.99',
-          'image':
-              'https://images.unsplash.com/photo-1580481072645-022f9a6d8310?q=80&w=400&auto=format&fit=crop',
-          'isFavorite': false,
-        },
-        {
-          'title': 'Twin Size Bunk Bed',
-          'discount': '9.09% OFF',
-          'price': '₹499.99',
-          'originalPrice': '₹549.99',
-          'image':
-              'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=400&auto=format&fit=crop',
-          'isFavorite': false,
-        },
-      ],
+      products: const [],
     ),
   ].obs;
 
-  final RxList<Map<String, String>> topBrands = <Map<String, String>>[
-    {'name': 'Adidas', 'logo': 'https://pngimg.com/d/adidas_PNG8.png'},
-    {'name': 'Amazon', 'logo': 'https://pngimg.com/d/amazon_PNG27.png'},
-    {
-      'name': 'American Tourister',
-      'logo':
-          'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/American_Tourister_logo.svg/1200px-American_Tourister_logo.svg.png',
-    },
-  ].obs;
+  final RxList<Map<String, String>> topBrands = <Map<String, String>>[].obs;
 
   HomeCategoryModel get currentCategory =>
       categories[selectedCategoryIndex.value];
@@ -293,6 +245,50 @@ class HomeController extends GetxController with SkeletonLoadingMixin {
 
   void selectCategory(int index) {
     selectedCategoryIndex.value = index;
+    if (index > 0 && index < categories.length && categories[index].products.isEmpty) {
+      fetchCategoryProducts(index);
+    }
+  }
+
+  Future<void> fetchCategoryProducts(int index) async {
+    final cat = categories[index];
+    if (cat.slug.isEmpty || cat.slug == 'all') return;
+    isCategoryProductsLoading.value = true;
+    try {
+      final response = await dioGet('catalog/search?category=${cat.slug}');
+      if (response.statusCode == 200 && response.data != null) {
+        dynamic rawData = response.data;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {
+          rawData = rawData['data'];
+        }
+        List? prods;
+        if (rawData is Map<String, dynamic> && rawData.containsKey('products')) {
+          prods = rawData['products'] as List?;
+        } else if (rawData is List) {
+          prods = rawData;
+        }
+        if (prods != null) {
+          final liveList = <Map<String, dynamic>>[];
+          for (var p in prods) {
+            if (p is Map<String, dynamic>) {
+              final prodModel = ShowcaseProductModel.fromJson(p);
+              liveList.add(prodModel.toDetailsMap());
+            }
+          }
+          categories[index].products = liveList;
+        } else {
+          categories[index].products = [];
+        }
+      } else {
+        categories[index].products = [];
+      }
+    } catch (_) {
+      categories[index].products = [];
+    } finally {
+      isCategoryProductsLoading.value = false;
+      categories.refresh();
+      selectedCategoryIndex.refresh();
+    }
   }
 
   void toggleFavorite(int productIndex) {

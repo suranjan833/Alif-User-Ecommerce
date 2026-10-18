@@ -68,6 +68,14 @@ class ShowcaseMiniBannerModel {
     );
   }
 
+  String get fullImageUrl {
+    if (imageUrl.isEmpty) return '';
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    return 'https://alifworld.vercel.app$imageUrl';
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -91,6 +99,12 @@ class ShowcaseProductModel {
   final String discount;
   final List<String> images;
   final String? sellerShopName;
+  final Map<String, dynamic>? seller;
+  final List<Map<String, dynamic>> variants;
+  final double? rating;
+  final int? reviews;
+  final int? stockQty;
+  final String? description;
   bool isFavorite;
 
   ShowcaseProductModel({
@@ -104,6 +118,12 @@ class ShowcaseProductModel {
     this.discount = '',
     this.images = const [],
     this.sellerShopName,
+    this.seller,
+    this.variants = const [],
+    this.rating,
+    this.reviews,
+    this.stockQty,
+    this.description,
     this.isFavorite = false,
   });
 
@@ -129,16 +149,21 @@ class ShowcaseProductModel {
       parsedOriginalPrice = (json['originalPrice'] as num).toDouble();
     }
 
+    List<Map<String, dynamic>> parsedVariants = [];
+    if (json['variants'] is List) {
+      parsedVariants = (json['variants'] as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+
     // Fallback to first variant if product-level price is null
-    if (parsedPrice == 0.0 && json['variants'] is List && (json['variants'] as List).isNotEmpty) {
-      final firstVar = (json['variants'] as List).first;
-      if (firstVar is Map<String, dynamic>) {
-        if (firstVar['priceMinor'] is num) {
-          parsedPrice = (firstVar['priceMinor'] as num) / 100.0;
-        }
-        if (firstVar['compareAtPriceMinor'] is num) {
-          parsedOriginalPrice = (firstVar['compareAtPriceMinor'] as num) / 100.0;
-        }
+    if (parsedPrice == 0.0 && parsedVariants.isNotEmpty) {
+      final firstVar = parsedVariants.first;
+      if (firstVar['priceMinor'] is num) {
+        parsedPrice = (firstVar['priceMinor'] as num) / 100.0;
+      }
+      if (firstVar['compareAtPriceMinor'] is num) {
+        parsedOriginalPrice = (firstVar['compareAtPriceMinor'] as num) / 100.0;
       }
     }
 
@@ -159,8 +184,29 @@ class ShowcaseProductModel {
     }
 
     String? shopName;
+    Map<String, dynamic>? sellerObj;
     if (json['seller'] is Map<String, dynamic>) {
-      shopName = json['seller']['shopName']?.toString();
+      sellerObj = json['seller'] as Map<String, dynamic>;
+      shopName = sellerObj['shopName']?.toString();
+    }
+
+    double? parsedRating;
+    if (json['ratingAvg'] is num) {
+      parsedRating = (json['ratingAvg'] as num).toDouble();
+    } else if (json['rating'] is num) {
+      parsedRating = (json['rating'] as num).toDouble();
+    }
+
+    int? parsedReviews;
+    if (json['ratingCount'] is int) {
+      parsedReviews = json['ratingCount'] as int;
+    } else if (json['reviews'] is int) {
+      parsedReviews = json['reviews'] as int;
+    }
+
+    int? parsedStock;
+    if (json['stockQty'] is int) {
+      parsedStock = json['stockQty'] as int;
     }
 
     return ShowcaseProductModel(
@@ -169,13 +215,46 @@ class ShowcaseProductModel {
       slug: json['slug']?.toString() ?? '',
       brandName: json['brandName']?.toString() ?? json['brand']?.toString(),
       categoryName: json['categoryName']?.toString(),
-      price: parsedPrice > 0 ? parsedPrice : 999.0,
+      price: parsedPrice > 0 ? parsedPrice : 0.0,
       originalPrice: parsedOriginalPrice,
       discount: calcDiscount.isNotEmpty ? calcDiscount : (json['discount']?.toString() ?? ''),
       images: parsedImages,
       sellerShopName: shopName,
+      seller: sellerObj,
+      variants: parsedVariants,
+      rating: parsedRating,
+      reviews: parsedReviews,
+      stockQty: parsedStock,
+      description: json['description']?.toString(),
       isFavorite: json['isFavorite'] == true,
     );
+  }
+
+  Map<String, dynamic> toDetailsMap() {
+    return {
+      'id': id,
+      'title': name,
+      'name': name,
+      'slug': slug,
+      'brand': brandName ?? 'Alif',
+      'brandName': brandName ?? 'Alif',
+      'categoryName': categoryName,
+      'price': '৳${price.toStringAsFixed(2)}',
+      'rawPrice': price,
+      'originalPrice': originalPrice != null
+          ? '৳${originalPrice!.toStringAsFixed(2)}'
+          : null,
+      'discount': discount,
+      'image': displayImage,
+      'images': images,
+      'variants': variants,
+      'seller': seller ?? (sellerShopName != null ? {'name': sellerShopName, 'shopName': sellerShopName} : null),
+      'rating': rating ?? 4.8,
+      'reviews': reviews ?? 24,
+      'stockQty': stockQty,
+      'description': description,
+      'isFavorite': isFavorite,
+    };
   }
 
   Map<String, dynamic> toJson() {
@@ -190,6 +269,12 @@ class ShowcaseProductModel {
       'discount': discount,
       'images': images,
       'sellerShopName': sellerShopName,
+      'seller': seller,
+      'variants': variants,
+      'rating': rating,
+      'reviews': reviews,
+      'stockQty': stockQty,
+      'description': description,
       'isFavorite': isFavorite,
     };
   }

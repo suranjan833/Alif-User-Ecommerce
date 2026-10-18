@@ -48,11 +48,23 @@ class CartItemModel {
         'Alif';
 
     double extractedPrice = 0.0;
-    final rawPrice = json['price'] ?? productObj?['price'];
-    if (rawPrice is num) {
-      extractedPrice = rawPrice.toDouble();
-    } else if (rawPrice != null) {
-      extractedPrice = double.tryParse(rawPrice.toString()) ?? 0.0;
+    final rawPriceMinor = json['priceMinor'] ?? productObj?['priceMinor'];
+    if (rawPriceMinor is num) {
+      extractedPrice = rawPriceMinor / 100.0;
+    } else {
+      final rawPrice = json['price'] ?? productObj?['price'];
+      if (rawPrice is num) {
+        extractedPrice = rawPrice.toDouble();
+      } else if (rawPrice != null) {
+        final clean = rawPrice
+            .toString()
+            .replaceAll('৳', '')
+            .replaceAll('₹', '')
+            .replaceAll('\$', '')
+            .replaceAll(',', '')
+            .trim();
+        extractedPrice = double.tryParse(clean) ?? 0.0;
+      }
     }
 
     int extractedQty = 1;

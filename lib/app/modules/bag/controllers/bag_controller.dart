@@ -10,29 +10,6 @@ import '../models/cart_model.dart';
 class BagController extends GetxController with SkeletonLoadingMixin {
   final cartItems = <CartItemModel>[].obs;
 
-  static final List<CartItemModel> fallbackCartItems = [
-    CartItemModel(
-      id: 'c1',
-      productId: 'p1',
-      brand: 'Logitech',
-      title: 'Gaming Mouse 16000 DPI',
-      price: 2999.0,
-      quantity: 1,
-      image:
-          'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?q=80&w=400&auto=format&fit=crop',
-    ),
-    CartItemModel(
-      id: 'c2',
-      productId: 'p2',
-      brand: 'Amazon',
-      title: 'Smart Color Bulb 2 Pack',
-      price: 1499.0,
-      quantity: 2,
-      image:
-          'https://images.unsplash.com/photo-1550525811-e5869dd03032?q=80&w=400&auto=format&fit=crop',
-    ),
-  ];
-
   @override
   void onInit() {
     super.onInit();
@@ -62,13 +39,13 @@ class BagController extends GetxController with SkeletonLoadingMixin {
                 .toList(),
           );
         } else {
-          cartItems.assignAll(fallbackCartItems);
+          cartItems.clear();
         }
       } else {
-        cartItems.assignAll(fallbackCartItems);
+        cartItems.clear();
       }
     } catch (_) {
-      cartItems.assignAll(fallbackCartItems);
+      cartItems.clear();
     } finally {
       isLoading.value = false;
     }
@@ -142,38 +119,48 @@ class BagController extends GetxController with SkeletonLoadingMixin {
 
   /// 5. POST /cart - Add item to bag
   Future<void> addItemToBag(Map<String, dynamic> item) async {
-    final itemId = item['id']?.toString() ??
+    final prodId = item['productId']?.toString() ??
+        item['id']?.toString() ??
         DateTime.now().millisecondsSinceEpoch.toString();
+    final variantId = item['variantId']?.toString();
     final existingIndex = cartItems.indexWhere(
-      (element) => element.id == itemId || element.productId == itemId,
+      (element) =>
+          (element.productId == prodId || element.id == prodId) &&
+          (variantId == null || element.variantId == variantId),
     );
 
     if (existingIndex != -1) {
       incrementQuantity(existingIndex);
     } else {
       double priceVal = 0.0;
-      final rawPrice = item['price'];
-      if (rawPrice is num) {
-        priceVal = rawPrice.toDouble();
-      } else if (rawPrice is String) {
-        priceVal =
-            double.tryParse(
-              rawPrice
-                  .replaceAll('₹', '')
-                  .replaceAll('\$', '')
-                  .replaceAll(',', '')
-                  .trim(),
-            ) ??
-            0.0;
+      final rawPriceMinor = item['priceMinor'];
+      if (rawPriceMinor is num) {
+        priceVal = rawPriceMinor / 100.0;
+      } else {
+        final rawPrice = item['price'];
+        if (rawPrice is num) {
+          priceVal = rawPrice.toDouble();
+        } else if (rawPrice is String) {
+          priceVal =
+              double.tryParse(
+                rawPrice
+                    .replaceAll('৳', '')
+                    .replaceAll('₹', '')
+                    .replaceAll('\$', '')
+                    .replaceAll(',', '')
+                    .trim(),
+              ) ??
+              0.0;
+        }
       }
 
       final newItem = CartItemModel(
-        id: itemId,
-        productId: itemId,
-        variantId: item['variantId']?.toString(),
+        id: prodId,
+        productId: prodId,
+        variantId: variantId,
         brand: item['brand']?.toString() ?? 'Alif',
         title: item['title']?.toString() ?? item['name']?.toString() ?? 'Product',
-        price: priceVal > 0 ? priceVal : 999.0,
+        price: priceVal,
         quantity: 1,
         image: item['image']?.toString() ?? '',
       );
@@ -184,7 +171,7 @@ class BagController extends GetxController with SkeletonLoadingMixin {
         await dioPost(
           endUrl: 'cart',
           data: {
-            'productId': itemId,
+            'productId': prodId,
             if (newItem.variantId != null) 'variantId': newItem.variantId,
             'qty': 1,
           },

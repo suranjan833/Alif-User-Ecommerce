@@ -96,7 +96,7 @@ class OrderSuccessView extends GetView<OrderSuccessController> {
                     Obx(
                       () => _buildInfoRow(
                         'Total Amount',
-                        '₹${controller.totalAmount.value.toStringAsFixed(2)}',
+                        '৳${controller.totalAmount.value.toStringAsFixed(2)}',
                         isHighlight: true,
                       ),
                     ),

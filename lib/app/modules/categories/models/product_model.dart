@@ -1,3 +1,5 @@
+import '../../product_details/models/product_details_model.dart';
+
 class ProductModel {
   final String? id;
   final String? brand;
@@ -13,6 +15,11 @@ class ProductModel {
   final String? subCategoryId;
   final double? rating;
 
+  final List<Map<String, dynamic>>? variants;
+  final Map<String, dynamic>? seller;
+  final String? categoryName;
+  final int? stockQty;
+
   ProductModel({
     this.id,
     this.brand,
@@ -27,6 +34,10 @@ class ProductModel {
     this.badge,
     this.subCategoryId,
     this.rating,
+    this.variants,
+    this.seller,
+    this.categoryName,
+    this.stockQty,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -83,6 +94,18 @@ class ProductModel {
       parsedImages = (json['images'] as List).map((e) => e.toString()).toList();
     }
 
+    List<Map<String, dynamic>>? parsedVariants;
+    if (json['variants'] is List) {
+      parsedVariants = (json['variants'] as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+
+    Map<String, dynamic>? parsedSeller;
+    if (json['seller'] is Map<String, dynamic>) {
+      parsedSeller = json['seller'] as Map<String, dynamic>;
+    }
+
     return ProductModel(
       id: json['id']?.toString() ?? json['_id']?.toString(),
       brand: json['brand']?.toString() ?? json['brandName']?.toString(),
@@ -105,6 +128,10 @@ class ProductModel {
           json['category_id']?.toString() ??
           json['categoryId']?.toString(),
       rating: json['rating'] is num ? (json['rating'] as num).toDouble() : null,
+      variants: parsedVariants,
+      seller: parsedSeller,
+      categoryName: json['categoryName']?.toString(),
+      stockQty: json['stockQty'] is int ? json['stockQty'] as int : null,
     );
   }
 
@@ -123,6 +150,14 @@ class ProductModel {
       'badge': badge,
       'subCategoryId': subCategoryId,
       'rating': rating,
+      'variants': variants,
+      'seller': seller,
+      'categoryName': categoryName,
+      'stockQty': stockQty,
     };
+  }
+
+  ProductDetailsModel toProductDetails() {
+    return ProductDetailsModel.fromJson(toJson());
   }
 }

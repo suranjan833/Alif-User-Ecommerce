@@ -207,84 +207,116 @@ class SellerDetailsView extends GetView<SellerDetailsController> {
                   SizedBox(height: 14.h),
 
                   Obx(
-                    () => GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.68,
-                        crossAxisSpacing: 12.w,
-                        mainAxisSpacing: 12.h,
-                      ),
-                      itemCount: controller.sellerProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = controller.sellerProducts[index];
-                        return GestureDetector(
-                          onTap: () => controller.openProductDetails(product),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8F9FA),
-                              borderRadius: BorderRadius.circular(16.r),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  height: 110.h,
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(8.r),
-                                  child: Center(
-                                    child: Image.network(
-                                      product['image'] as String,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 10.w,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        product['brand'] as String,
-                                        style: GoogleFonts.lato(
-                                          fontSize: 11.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColor.primaryDark,
-                                        ),
-                                      ),
-                                      SizedBox(height: 2.h),
-                                      Text(
-                                        product['title'] as String,
-                                        style: GoogleFonts.lato(
-                                          fontSize: 12.5.sp,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColor.textPrimary,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      SizedBox(height: 4.h),
-                                      Text(
-                                        product['price'] as String,
-                                        style: GoogleFonts.lato(
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColor.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                    () {
+                      if (controller.sellerProducts.isEmpty) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24.h),
+                          child: Center(
+                            child: Text(
+                              'No products listed by this store yet.',
+                              style: GoogleFonts.lato(
+                                fontSize: 13.sp,
+                                color: AppColor.textSecondary,
+                              ),
                             ),
                           ),
                         );
-                      },
-                    ),
+                      }
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.68,
+                          crossAxisSpacing: 12.w,
+                          mainAxisSpacing: 12.h,
+                        ),
+                        itemCount: controller.sellerProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = controller.sellerProducts[index];
+                          final img = product['image']?.toString() ?? '';
+                          final brand = product['brand']?.toString() ?? '';
+                          final title = product['title']?.toString() ??
+                              product['name']?.toString() ??
+                              '';
+                          final price = product['price']?.toString() ?? '';
+
+                          return GestureDetector(
+                            onTap: () => controller.openProductDetails(product),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8F9FA),
+                                borderRadius: BorderRadius.circular(16.r),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 110.h,
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(8.r),
+                                    child: Center(
+                                      child: img.isNotEmpty
+                                          ? Image.network(
+                                              img,
+                                              fit: BoxFit.contain,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) =>
+                                                      Icon(Icons.image,
+                                                          size: 32.r,
+                                                          color: Colors.grey),
+                                            )
+                                          : Icon(Icons.image,
+                                              size: 32.r, color: Colors.grey),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10.w,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (brand.isNotEmpty)
+                                          Text(
+                                            brand,
+                                            style: GoogleFonts.lato(
+                                              fontSize: 11.sp,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColor.primaryDark,
+                                            ),
+                                          ),
+                                        SizedBox(height: 2.h),
+                                        Text(
+                                          title,
+                                          style: GoogleFonts.lato(
+                                            fontSize: 12.5.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColor.textPrimary,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        SizedBox(height: 4.h),
+                                        Text(
+                                          price,
+                                          style: GoogleFonts.lato(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColor.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
