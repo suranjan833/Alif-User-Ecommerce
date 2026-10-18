@@ -20,6 +20,16 @@ class BrandModel {
     );
   }
 
+  String get fullLogoUrl {
+    if (logoUrl.isEmpty) return '';
+    if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+      return logoUrl;
+    }
+    return 'https://alifworld.vercel.app$logoUrl';
+  }
+
+  bool get isSvg => fullLogoUrl.toLowerCase().contains('.svg');
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

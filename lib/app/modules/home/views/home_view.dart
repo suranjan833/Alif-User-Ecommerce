@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../../../data/config/app_image.dart';
+import '../../../data/widgets/brand_logo_widget.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../../../data/widgets/typewriter_search_hint.dart';
 import '../../../routes/app_pages.dart';
@@ -282,12 +283,33 @@ class HomeView extends GetView<HomeController> {
                                       color: AppColor.textPrimary,
                                     ),
                                   ),
-                                  Text(
-                                    'See All',
-                                    style: GoogleFonts.lato(
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColor.textSecondary,
+                                  InkWell(
+                                    onTap: () => Get.toNamed(Routes.TOP_BRANDS),
+                                    borderRadius: BorderRadius.circular(6.r),
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 4.w,
+                                        vertical: 2.h,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'View all',
+                                            style: GoogleFonts.lato(
+                                              fontSize: 13.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColor.primary,
+                                            ),
+                                          ),
+                                          SizedBox(width: 2.w),
+                                          Icon(
+                                            Icons.arrow_forward_ios_rounded,
+                                            size: 11.r,
+                                            color: AppColor.primary,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -906,27 +928,46 @@ class HomeView extends GetView<HomeController> {
 
   Widget _buildBrandCard(Map<String, String> brand) {
     return Container(
-      width: 120.w,
-      height: 90.h,
+      width: 135.w,
+      height: 95.h,
       margin: EdgeInsets.only(right: 12.w),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F4F6),
         borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.w),
       ),
-      child: Center(
-        child: Padding(
-          padding: EdgeInsets.all(16.w),
-          child: Image.network(
-            brand['logo']!,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Text(
-              brand['name']!,
-              style: GoogleFonts.montserrat(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.bold,
-                color: AppColor.textPrimary,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16.r),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16.r),
+          onTap: () {
+            final name = brand['name'] ?? '';
+            final logo = brand['logo'] ?? '';
+            Get.toNamed(
+              Routes.CATEGORY_PRODUCTS,
+              arguments: {
+                'name': name,
+                'brand': name,
+                'slug': name.toLowerCase(),
+                'brandSlug': name.toLowerCase(),
+                'image': logo,
+              },
+            );
+          },
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 14.w,
+                vertical: 12.h,
               ),
-              textAlign: TextAlign.center,
+              child: BrandLogoWidget(
+                logoUrl: brand['logo'] ?? '',
+                brandName: brand['name'] ?? '',
+                width: 105.w,
+                height: 65.h,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),

@@ -2,6 +2,8 @@
 
 import 'package:get/get.dart';
 
+import '../modules/top_brands/bindings/top_brands_binding.dart';
+import '../modules/top_brands/views/top_brands_view.dart';
 import '../modules/checkout/bindings/checkout_binding.dart';
 import '../modules/checkout/views/checkout_view.dart';
 import '../modules/order_success/bindings/order_success_binding.dart';
@@ -250,6 +252,12 @@ class AppPages {
       page: () => const OrderSuccessView(),
       binding: OrderSuccessBinding(),
       transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: _Paths.TOP_BRANDS,
+      page: () => const TopBrandsView(),
+      binding: TopBrandsBinding(),
+      transition: Transition.rightToLeft,
     ),
   ];
 }

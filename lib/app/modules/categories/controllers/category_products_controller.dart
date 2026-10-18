@@ -7,6 +7,7 @@ class CategoryProductsController extends GetxController {
   final categoryName = 'Electronics'.obs;
   final categoryImage = ''.obs;
   final categorySlug = ''.obs;
+  final brandSlug = ''.obs;
 
   final selectedSubCategoryIndex = 0.obs;
   final wishlistedProductIds = <String>{}.obs;
@@ -132,6 +133,11 @@ class CategoryProductsController extends GetxController {
       if (args.containsKey('slug')) {
         categorySlug.value = args['slug'].toString();
       }
+      if (args.containsKey('brandSlug')) {
+        brandSlug.value = args['brandSlug'].toString();
+      } else if (args.containsKey('brand')) {
+        brandSlug.value = args['brand'].toString().toLowerCase();
+      }
       if (args.containsKey('children') && args['children'] is List) {
         final childrenList = args['children'] as List;
         if (childrenList.isNotEmpty) {
@@ -166,10 +172,10 @@ class CategoryProductsController extends GetxController {
   Future<void> _loadProducts() async {
     isLoading.value = true;
     try {
-      final slug = categorySlug.value.isNotEmpty
-          ? categorySlug.value
-          : categoryName.value.toLowerCase();
-      final response = await dioGet('catalog/search?category=$slug');
+      final endpoint = brandSlug.value.isNotEmpty
+          ? 'catalog/search?brand=${brandSlug.value}'
+          : 'catalog/search?category=${categorySlug.value.isNotEmpty ? categorySlug.value : categoryName.value.toLowerCase()}';
+      final response = await dioGet(endpoint);
       if (response.statusCode == 200 && response.data != null) {
         dynamic rawData = response.data;
         if (rawData is Map<String, dynamic> && rawData.containsKey('data')) {

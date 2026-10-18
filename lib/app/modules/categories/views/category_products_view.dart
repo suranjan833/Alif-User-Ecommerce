@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
+import '../../../data/widgets/brand_logo_widget.dart';
 import '../../../data/widgets/skeleton_box.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/category_products_controller.dart';
@@ -147,14 +148,10 @@ class CategoryProductsView extends GetView<CategoryProductsController> {
                 border: Border.all(color: const Color(0xFFECEEF2)),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Image.network(
-                controller.categoryImage.value,
+              child: BrandLogoWidget(
+                logoUrl: controller.categoryImage.value,
+                brandName: controller.categoryName.value,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Icon(
-                  Iconsax.image,
-                  size: 20.r,
-                  color: AppColor.textSecondary,
-                ),
               ),
             ),
             SizedBox(width: 10.w),

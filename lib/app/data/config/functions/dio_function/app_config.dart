@@ -14,7 +14,7 @@ const String USER_ROLE_ID = "ROLE_ID";
 const String USER_NAME = "user_name";
 const String USER_EMAIL = "user_email";
 const String USER_PASSWORD = "password";
-const String VEHICLE_ID = "vehicle_id";
+
 const String USER_PHONE = "user_phone";
 const String USER_LOGIN = "login_true";
 const String HIDEBUYNOW = "buy_now";
