@@ -49,7 +49,9 @@ class CheckoutView extends GetView<CheckoutController> {
                   Obx(
                     () => _buildSectionHeader(
                       'Delivery Address',
-                      actionText: controller.addresses.isNotEmpty ? '+ Add New' : null,
+                      actionText: controller.addresses.isNotEmpty
+                          ? '+ Add New'
+                          : null,
                       onAction: () => controller.openAddAddressModal(context),
                     ),
                   ),
@@ -148,8 +150,7 @@ class CheckoutView extends GetView<CheckoutController> {
 
                     return RadioGroup<int>(
                       groupValue: controller.selectedAddressIndex.value,
-                      onChanged: (val) =>
-                          controller.selectAddress(val ?? 0),
+                      onChanged: (val) => controller.selectAddress(val ?? 0),
                       child: Column(
                         children: List.generate(controller.addresses.length, (
                           index,
@@ -221,8 +222,31 @@ class CheckoutView extends GetView<CheckoutController> {
                   // 2. Order Items Card
                   _buildSectionHeader('Order Items'),
                   SizedBox(height: 8.h),
-                  Obx(
-                    () => Container(
+                  Obx(() {
+                    if (controller.items.isEmpty) {
+                      return Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 18.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'No items in order',
+                            style: GoogleFonts.lato(
+                              fontSize: 13.5.sp,
+                              color: AppColor.textSecondary,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Container(
                       padding: EdgeInsets.all(14.r),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -234,8 +258,14 @@ class CheckoutView extends GetView<CheckoutController> {
                         ) {
                           final item = controller.items[index];
                           final isLast = index == controller.items.length - 1;
-                          final price = item['price'] as double;
-                          final qty = item['quantity'] as int;
+                          final price =
+                              (item['price'] as num?)?.toDouble() ?? 0.0;
+                          final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+                          final rawImg = item['image'] as String? ?? '';
+                          final imgUrl =
+                              (rawImg.isNotEmpty && !rawImg.startsWith('http'))
+                              ? 'https://alifworld.vercel.app$rawImg'
+                              : rawImg;
 
                           return Column(
                             children: [
@@ -249,16 +279,26 @@ class CheckoutView extends GetView<CheckoutController> {
                                       color: const Color(0xFFF8F9FA),
                                       borderRadius: BorderRadius.circular(10.r),
                                     ),
-                                    child: Image.network(
-                                      item['image'] as String? ?? '',
-                                      fit: BoxFit.contain,
-                                      errorBuilder:
-                                          (context, error, stackTrace) => Icon(
+                                    child: imgUrl.isNotEmpty
+                                        ? Image.network(
+                                            imgUrl,
+                                            fit: BoxFit.contain,
+                                            errorBuilder:
+                                                (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) => Icon(
+                                                  Iconsax.image,
+                                                  size: 22.r,
+                                                  color: AppColor.textSecondary,
+                                                ),
+                                          )
+                                        : Icon(
                                             Iconsax.image,
                                             size: 22.r,
                                             color: AppColor.textSecondary,
                                           ),
-                                    ),
                                   ),
                                   SizedBox(width: 12.w),
                                   Expanded(
@@ -267,7 +307,9 @@ class CheckoutView extends GetView<CheckoutController> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          item['title'] as String? ?? 'Product',
+                                          item['title'] as String? ??
+                                              item['name'] as String? ??
+                                              'Product',
                                           style: GoogleFonts.lato(
                                             fontSize: 14.sp,
                                             fontWeight: FontWeight.bold,
@@ -306,8 +348,8 @@ class CheckoutView extends GetView<CheckoutController> {
                           );
                         }),
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                   SizedBox(height: 14.h),
 
                   // 3. Promo Code Section
@@ -430,88 +472,90 @@ class CheckoutView extends GetView<CheckoutController> {
                         onChanged: (val) =>
                             controller.selectPaymentMethod(val ?? 'Razorpay'),
                         child: Column(
-                        children: [
-                          // bKash Option
-                          _buildPaymentMethodTile(
-                            id: 'bKash',
-                            title: 'bKash Payment',
-                            subtitle: 'Instant mobile payment via bKash wallet',
-                            iconWidget: Container(
-                              width: 32.r,
-                              height: 32.r,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE2136E),
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  color: Colors.white,
-                                  size: 18,
+                          children: [
+                            // bKash Option
+                            _buildPaymentMethodTile(
+                              id: 'bKash',
+                              title: 'bKash Payment',
+                              subtitle:
+                                  'Instant mobile payment via bKash wallet',
+                              iconWidget: Container(
+                                width: 32.r,
+                                height: 32.r,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE2136E),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.account_balance_wallet_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const Divider(color: Color(0xFFF1F5F9), height: 16),
+                            const Divider(color: Color(0xFFF1F5F9), height: 16),
 
-                          // Nagad Option
-                          _buildPaymentMethodTile(
-                            id: 'Nagad',
-                            title: 'Nagad Payment',
-                            subtitle: 'Instant mobile payment via Nagad wallet',
-                            iconWidget: Container(
-                              width: 32.r,
-                              height: 32.r,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF7941D),
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  color: Colors.white,
-                                  size: 18,
+                            // Nagad Option
+                            _buildPaymentMethodTile(
+                              id: 'Nagad',
+                              title: 'Nagad Payment',
+                              subtitle:
+                                  'Instant mobile payment via Nagad wallet',
+                              iconWidget: Container(
+                                width: 32.r,
+                                height: 32.r,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF7941D),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.account_balance_wallet_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const Divider(color: Color(0xFFF1F5F9), height: 16),
+                            const Divider(color: Color(0xFFF1F5F9), height: 16),
 
-                          // COD Option
-                          _buildPaymentMethodTile(
-                            id: 'COD',
-                            title: 'Cash on Delivery (COD)',
-                            subtitle: 'Pay cash upon receiving delivery',
-                            iconWidget: Icon(
-                              Iconsax.money_send,
-                              size: 24.r,
-                              color: AppColor.textPrimary,
-                            ),
-                          ),
-                          const Divider(color: Color(0xFFF1F5F9), height: 16),
-
-                          // Wallet Option
-                          _buildPaymentMethodTile(
-                            id: 'Wallet',
-                            title: 'Alif Wallet',
-                            subtitle: 'Pay using your account balance',
-                            iconWidget: Container(
-                              width: 32.r,
-                              height: 32.r,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6366F1),
-                                borderRadius: BorderRadius.circular(8.r),
+                            // COD Option
+                            _buildPaymentMethodTile(
+                              id: 'COD',
+                              title: 'Cash on Delivery (COD)',
+                              subtitle: 'Pay cash upon receiving delivery',
+                              iconWidget: Icon(
+                                Iconsax.money_send,
+                                size: 24.r,
+                                color: AppColor.textPrimary,
                               ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.account_balance_wallet_rounded,
-                                  color: Colors.white,
-                                  size: 18,
+                            ),
+                            const Divider(color: Color(0xFFF1F5F9), height: 16),
+
+                            // Wallet Option
+                            _buildPaymentMethodTile(
+                              id: 'Wallet',
+                              title: 'Alif Wallet',
+                              subtitle: 'Pay using your account balance',
+                              iconWidget: Container(
+                                width: 32.r,
+                                height: 32.r,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF6366F1),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.account_balance_wallet_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
                         ),
                       ),
                     ),
@@ -628,11 +672,11 @@ class CheckoutView extends GetView<CheckoutController> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               controller.selectedPaymentMethod.value == 'bKash'
-                                  ? const Color(0xFFE2136E)
-                                  : (controller.selectedPaymentMethod.value ==
-                                          'Nagad'
-                                      ? const Color(0xFFF7941D)
-                                      : (controller.selectedPaymentMethod.value ==
+                              ? const Color(0xFFE2136E)
+                              : (controller.selectedPaymentMethod.value ==
+                                        'Nagad'
+                                    ? const Color(0xFFF7941D)
+                                    : (controller.selectedPaymentMethod.value ==
                                               'Wallet'
                                           ? const Color(0xFF6366F1)
                                           : AppColor.primary)),
@@ -652,15 +696,18 @@ class CheckoutView extends GetView<CheckoutController> {
                                 ),
                               )
                             : Text(
-                                controller.selectedPaymentMethod.value == 'bKash'
+                                controller.selectedPaymentMethod.value ==
+                                        'bKash'
                                     ? 'Pay with bKash'
                                     : (controller.selectedPaymentMethod.value ==
-                                            'Nagad'
-                                        ? 'Pay with Nagad'
-                                        : (controller.selectedPaymentMethod.value ==
-                                                'Wallet'
-                                            ? 'Pay with Wallet'
-                                            : 'Place Order (COD)')),
+                                              'Nagad'
+                                          ? 'Pay with Nagad'
+                                          : (controller
+                                                        .selectedPaymentMethod
+                                                        .value ==
+                                                    'Wallet'
+                                                ? 'Pay with Wallet'
+                                                : 'Place Order (COD)')),
                                 style: GoogleFonts.lato(
                                   fontSize: 15.sp,
                                   fontWeight: FontWeight.bold,
@@ -730,10 +777,7 @@ class CheckoutView extends GetView<CheckoutController> {
         ),
         child: Row(
           children: [
-            Radio<String>(
-              value: id,
-              activeColor: const Color(0xFF0284C7),
-            ),
+            Radio<String>(value: id, activeColor: const Color(0xFF0284C7)),
             iconWidget,
             SizedBox(width: 12.w),
             Expanded(

@@ -280,20 +280,22 @@ class ProductDetailsController extends GetxController with SkeletonLoadingMixin 
     final bagCtrl = Get.find<BagController>();
 
     final sv = selectedVariant;
+    final fallbackVariantId =
+        sv?.id ?? (p.variants.isNotEmpty ? p.variants.first.id : null);
     final itemPayload = <String, dynamic>{
       'id': p.id,
       'productId': p.id,
-      'variantId': sv?.id,
-      'variantLabel': sv?.label,
+      'variantId': fallbackVariantId,
+      'variantLabel': sv?.label ?? (p.variants.isNotEmpty ? p.variants.first.label : null),
       'brand': p.displayBrand,
       'title': p.name,
       'price': activePriceValue,
       'image': imagesList.first,
+      'slug': p.slug,
+      'variants': p.variants.map((v) => v.toJson()).toList(),
     };
 
-    for (int i = 0; i < selectedQuantity.value; i++) {
-      bagCtrl.addItemToBag(itemPayload);
-    }
+    bagCtrl.addItemToBag(itemPayload, quantity: selectedQuantity.value);
 
     Get.snackbar(
       'Added to Bag',

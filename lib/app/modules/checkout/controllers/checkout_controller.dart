@@ -37,7 +37,7 @@ class CheckoutController extends GetxController {
   String? get selectedAddressId {
     if (addresses.isNotEmpty && selectedAddressIndex.value < addresses.length) {
       final id = addresses[selectedAddressIndex.value]['id']?.toString();
-      if (id != null && id.isNotEmpty) return id;
+      if (id != null && id.isNotEmpty && !id.startsWith('addr_')) return id;
     }
     return null;
   }
@@ -69,6 +69,21 @@ class CheckoutController extends GetxController {
       deliveryFee.value = (args['deliveryFee'] as num?)?.toDouble() ?? 0.0;
       tax.value = (args['tax'] as num?)?.toDouble() ?? 0.0;
       isDirectBuy.value = args['isDirectBuy'] as bool? ?? false;
+    }
+
+    // Fallback: If items is still empty, load from BagController
+    if (items.isEmpty) {
+      if (!Get.isRegistered<BagController>()) {
+        Get.put(BagController());
+      }
+      final bag = Get.find<BagController>();
+      if (bag.cartItems.isNotEmpty) {
+        items.value = bag.cartItems.map((e) => e.toJson()).toList();
+        subtotal.value = bag.subtotal;
+        deliveryFee.value = bag.deliveryFee;
+        tax.value = bag.tax;
+        isDirectBuy.value = false;
+      }
     }
     fetchUserAddresses();
     fetchQuote();
@@ -112,6 +127,20 @@ class CheckoutController extends GetxController {
           final parsed = <Map<String, dynamic>>[];
           for (var item in addrList) {
             if (item is Map<String, dynamic>) {
+              final street = item['addressLine']?.toString() ??
+                  item['address']?.toString() ??
+                  '';
+              final upazila = item['upazila']?.toString() ?? '';
+              final district = item['district']?.toString() ??
+                  item['city']?.toString() ??
+                  '';
+              final division = item['division']?.toString() ?? '';
+
+              final parts = [street, upazila, district, division]
+                  .where((s) => s.trim().isNotEmpty)
+                  .toList();
+              final fullAddress = parts.isNotEmpty ? parts.join(', ') : street;
+
               parsed.add({
                 'id': item['id']?.toString() ?? '',
                 'name':
@@ -124,21 +153,26 @@ class CheckoutController extends GetxController {
                     item['type']?.toString() ??
                     'Home',
                 'phone': item['phone']?.toString() ?? '',
-                'address':
-                    item['addressLine']?.toString() ??
-                    item['address']?.toString() ??
-                    '',
-                'city': item['district']?.toString() ?? item['city']?.toString() ?? '',
-                'division': item['division']?.toString() ?? '',
+                'address': fullAddress,
+                'addressLine': street,
+                'upazila': upazila,
+                'city': district,
+                'division': division,
                 'postalCode': item['postalCode']?.toString() ?? '',
+                'isDefault': item['isDefault'] == true,
               });
             }
           }
           if (parsed.isNotEmpty) {
             addresses.assignAll(parsed);
-            if (selectedAddressIndex.value >= addresses.length) {
+            final defaultIdx =
+                parsed.indexWhere((a) => a['isDefault'] == true);
+            if (defaultIdx != -1) {
+              selectedAddressIndex.value = defaultIdx;
+            } else if (selectedAddressIndex.value >= addresses.length) {
               selectedAddressIndex.value = 0;
             }
+            fetchQuote();
           }
         }
       }
@@ -175,19 +209,169 @@ class CheckoutController extends GetxController {
           if (quote.deliveryFee >= 0) deliveryFee.value = quote.deliveryFee;
           if (quote.tax >= 0) tax.value = quote.tax;
           if (quote.discount >= 0) discount.value = quote.discount;
+
+          // Sync lines from quote into items so Order Items matches Total Payable
+          if (rawData['lines'] is List) {
+            final lines = rawData['lines'] as List;
+            if (lines.isNotEmpty) {
+              final bagItems = Get.isRegistered<BagController>()
+                  ? Get.find<BagController>().cartItems
+                  : const [];
+
+              final updatedItems = <Map<String, dynamic>>[];
+              for (var line in lines) {
+                if (line is Map) {
+                  final pId = line['productId']?.toString() ?? '';
+                  final vId = line['variantId']?.toString() ?? '';
+                  final pMinor = line['unitPriceMinor'] ?? line['priceMinor'];
+                  final priceVal = pMinor is num ? (pMinor / 100.0) : 0.0;
+                  final qVal =
+                      line['qty'] is num ? (line['qty'] as num).toInt() : 1;
+
+                  // Find matching image from existing items or bag items
+                  String img = '';
+                  final existingMatch = items.firstWhereOrNull(
+                    (el) =>
+                        (vId.isNotEmpty && el['variantId'] == vId) ||
+                        (pId.isNotEmpty && el['productId'] == pId),
+                  );
+                  if (existingMatch != null && existingMatch['image'] != null) {
+                    img = existingMatch['image'].toString();
+                  }
+                  if (img.isEmpty && bagItems.isNotEmpty) {
+                    final bagMatch = bagItems.firstWhereOrNull(
+                      (el) =>
+                          (vId.isNotEmpty && el.variantId == vId) ||
+                          (pId.isNotEmpty && el.productId == pId),
+                    );
+                    if (bagMatch != null) {
+                      img = bagMatch.image;
+                    }
+                  }
+
+                  updatedItems.add({
+                    'id': vId.isNotEmpty ? vId : pId,
+                    'productId': pId,
+                    'variantId': vId,
+                    'variantLabel': line['variantLabel']?.toString(),
+                    'title': line['productName']?.toString() ??
+                        line['title']?.toString() ??
+                        'Product',
+                    'price': priceVal,
+                    'quantity': qVal,
+                    'image': img,
+                  });
+                }
+              }
+              if (updatedItems.isNotEmpty) {
+                items.assignAll(updatedItems);
+              }
+            }
+          }
         }
       }
     } catch (_) {}
   }
 
-  /// Open modal to dynamically add an address
+  /// Open modal to dynamically add an address with Bangladesh Geo Hierarchy
   void openAddAddressModal(BuildContext context) {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final streetCtrl = TextEditingController();
-    final cityCtrl = TextEditingController();
+    final postalCodeCtrl = TextEditingController(text: '1205');
     final isSaving = false.obs;
     final selectedType = 'Home'.obs;
+
+    // Dynamic Geo States
+    final divisions = <Map<String, dynamic>>[].obs;
+    final districts = <Map<String, dynamic>>[].obs;
+    final upazilas = <Map<String, dynamic>>[].obs;
+    final selectedDivisionId = Rxn<String>();
+    final selectedDistrictId = Rxn<String>();
+    final selectedUpazilaId = Rxn<String>();
+    final isLoadingDivisions = false.obs;
+    final isLoadingDistricts = false.obs;
+    final isLoadingUpazilas = false.obs;
+
+    Future<void> loadUpazilas(String distId) async {
+      isLoadingUpazilas.value = true;
+      upazilas.clear();
+      selectedUpazilaId.value = null;
+      try {
+        final res = await dioGet('geo/upazilas?districtId=$distId');
+        if (res.statusCode == 200 && res.data != null) {
+          final data = res.data is Map && res.data['data'] != null
+              ? res.data['data']
+              : res.data;
+          if (data is Map && data['upazilas'] is List) {
+            final list = List<Map<String, dynamic>>.from(data['upazilas']);
+            upazilas.assignAll(list);
+            if (list.isNotEmpty) {
+              selectedUpazilaId.value = list.first['id']?.toString();
+            }
+          }
+        }
+      } catch (_) {}
+      isLoadingUpazilas.value = false;
+    }
+
+    Future<void> loadDistricts(String divId) async {
+      isLoadingDistricts.value = true;
+      districts.clear();
+      upazilas.clear();
+      selectedDistrictId.value = null;
+      selectedUpazilaId.value = null;
+      try {
+        final res = await dioGet('geo/districts?divisionId=$divId');
+        if (res.statusCode == 200 && res.data != null) {
+          final data = res.data is Map && res.data['data'] != null
+              ? res.data['data']
+              : res.data;
+          if (data is Map && data['districts'] is List) {
+            final list = List<Map<String, dynamic>>.from(data['districts']);
+            districts.assignAll(list);
+            if (list.isNotEmpty) {
+              final defaultDist = list.firstWhere(
+                (d) =>
+                    d['name']?.toString().toLowerCase() == 'dhaka',
+                orElse: () => list.first,
+              );
+              selectedDistrictId.value = defaultDist['id']?.toString();
+              await loadUpazilas(defaultDist['id'].toString());
+            }
+          }
+        }
+      } catch (_) {}
+      isLoadingDistricts.value = false;
+    }
+
+    Future<void> loadDivisions() async {
+      isLoadingDivisions.value = true;
+      try {
+        final res = await dioGet('geo/divisions');
+        if (res.statusCode == 200 && res.data != null) {
+          final data = res.data is Map && res.data['data'] != null
+              ? res.data['data']
+              : res.data;
+          if (data is Map && data['divisions'] is List) {
+            final list = List<Map<String, dynamic>>.from(data['divisions']);
+            divisions.assignAll(list);
+            if (list.isNotEmpty) {
+              final defaultDiv = list.firstWhere(
+                (d) =>
+                    d['name']?.toString().toLowerCase() == 'dhaka',
+                orElse: () => list.first,
+              );
+              selectedDivisionId.value = defaultDiv['id']?.toString();
+              await loadDistricts(defaultDiv['id'].toString());
+            }
+          }
+        }
+      } catch (_) {}
+      isLoadingDivisions.value = false;
+    }
+
+    loadDivisions();
 
     Get.bottomSheet(
       Container(
@@ -196,236 +380,461 @@ class CheckoutController extends GetxController {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
-                    borderRadius: BorderRadius.circular(2.r),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                'Add Delivery Address',
-                style: GoogleFonts.lato(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppColor.textPrimary,
+                SizedBox(height: 16.h),
+                Text(
+                  'Add Delivery Address',
+                  style: GoogleFonts.lato(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.textPrimary,
+                  ),
                 ),
-              ),
-              SizedBox(height: 14.h),
+                SizedBox(height: 14.h),
 
-              // Address Type
-              Obx(
-                () => Row(
-                  children: ['Home', 'Office', 'Other'].map((type) {
-                    final isSel = selectedType.value == type;
-                    return Padding(
-                      padding: EdgeInsets.only(right: 8.w),
-                      child: ChoiceChip(
-                        label: Text(type),
-                        selected: isSel,
-                        onSelected: (val) => selectedType.value = type,
-                        selectedColor: AppColor.primary,
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        labelStyle: GoogleFonts.lato(
-                          fontSize: 12.sp,
-                          fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                          color: isSel ? Colors.white : AppColor.textPrimary,
+                // Address Type
+                Obx(
+                  () => Row(
+                    children: ['Home', 'Office', 'Other'].map((type) {
+                      final isSel = selectedType.value == type;
+                      return Padding(
+                        padding: EdgeInsets.only(right: 8.w),
+                        child: ChoiceChip(
+                          label: Text(type),
+                          selected: isSel,
+                          onSelected: (val) => selectedType.value = type,
+                          selectedColor: AppColor.primary,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          labelStyle: GoogleFonts.lato(
+                            fontSize: 12.sp,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                            color: isSel ? Colors.white : AppColor.textPrimary,
+                          ),
                         ),
-                      ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+
+                // Recipient Name
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Recipient Full Name *',
+                    labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+
+                // Phone Number
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number (e.g. 017xxxxxxxx) *',
+                    hintText: '01XXXXXXXXX',
+                    labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+
+                // Division Dropdown
+                Obx(() {
+                  if (isLoadingDivisions.value) {
+                    return Container(
+                      height: 50.h,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
                     );
-                  }).toList(),
-                ),
-              ),
-              SizedBox(height: 12.h),
-
-              // Recipient Name
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Recipient Full Name *',
-                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10.h),
-
-              // Phone Number
-              TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number (e.g. 017xxxxxxxx) *',
-                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10.h),
-
-              // Delivery Address
-              TextField(
-                controller: streetCtrl,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: 'Street Address / House / Flat *',
-                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10.h),
-
-              // City / Area
-              TextField(
-                controller: cityCtrl,
-                decoration: InputDecoration(
-                  labelText: 'City / District / Area *',
-                  labelStyle: GoogleFonts.lato(fontSize: 13.sp),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20.h),
-
-              // Save Button
-              Obx(
-                () => SizedBox(
-                  width: double.infinity,
-                  height: 48.h,
-                  child: ElevatedButton(
-                    onPressed: isSaving.value
-                        ? null
-                        : () async {
-                            final name = nameCtrl.text.trim();
-                            final phone = phoneCtrl.text.trim();
-                            final street = streetCtrl.text.trim();
-                            final city = cityCtrl.text.trim();
-
-                            if (name.isEmpty ||
-                                phone.isEmpty ||
-                                street.isEmpty ||
-                                city.isEmpty) {
-                              Get.snackbar(
-                                'Missing Information',
-                                'Please fill all required fields',
-                                snackPosition: SnackPosition.BOTTOM,
-                                backgroundColor: AppColor.error,
-                                colorText: Colors.white,
-                              );
-                              return;
-                            }
-
-                            isSaving.value = true;
-                            final fullAddr = '$street, $city';
-                            String newId =
-                                'addr_${DateTime.now().millisecondsSinceEpoch}';
-
-                            try {
-                              final response = await dioPost(
-                                endUrl: 'addresses',
-                                data: {
-                                  'label': selectedType.value,
-                                  'fullName': name,
-                                  'phone': phone,
-                                  'addressLine': street,
-                                  'division': city,
-                                  'district': city,
-                                  'upazila': city,
-                                  'postalCode': '1000',
-                                  'isDefault': addresses.isEmpty,
-                                },
-                                isJson: true,
-                              );
-                              if (response.statusCode == 200 ||
-                                  response.statusCode == 201) {
-                                dynamic rawData = response.data;
-                                if (rawData is Map &&
-                                    rawData.containsKey('data')) {
-                                  rawData = rawData['data'];
-                                }
-                                if (rawData is Map && rawData['id'] != null) {
-                                  newId = rawData['id'].toString();
-                                }
-                              }
-                            } catch (_) {}
-
-                            addresses.add({
-                              'id': newId,
-                              'name': name,
-                              'type': selectedType.value,
-                              'phone': phone,
-                              'address': fullAddr,
-                            });
-                            selectedAddressIndex.value =
-                                addresses.length - 1;
-                            isSaving.value = false;
-
-                            Get.back(); // close bottomsheet
-                            fetchQuote();
-
-                            Get.snackbar(
-                              'Address Saved',
-                              'Delivery address added successfully',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: const Color(0xFF16A34A),
-                              colorText: Colors.white,
-                            );
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColor.primary,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
+                  }
+                  return DropdownButtonFormField<String>(
+                    initialValue: selectedDivisionId.value,
+                    decoration: InputDecoration(
+                      labelText: 'Division *',
+                      labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                      filled: true,
+                      fillColor: const Color(0xFFF8F9FA),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14.w,
+                        vertical: 12.h,
                       ),
                     ),
-                    child: isSaving.value
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            'Save & Deliver Here',
-                            style: GoogleFonts.lato(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                    isExpanded: true,
+                    items: divisions.map((d) {
+                      final name = d['name']?.toString() ?? '';
+                      final bnName = d['bnName']?.toString() ?? '';
+                      return DropdownMenuItem<String>(
+                        value: d['id']?.toString(),
+                        child: Text(
+                          bnName.isNotEmpty ? '$name ($bnName)' : name,
+                          style: GoogleFonts.lato(fontSize: 13.sp),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        selectedDivisionId.value = val;
+                        loadDistricts(val);
+                      }
+                    },
+                  );
+                }),
+                SizedBox(height: 10.h),
+
+                // District Dropdown
+                Obx(() {
+                  if (isLoadingDistricts.value) {
+                    return Container(
+                      height: 50.h,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  return DropdownButtonFormField<String>(
+                    initialValue: selectedDistrictId.value,
+                    decoration: InputDecoration(
+                      labelText: 'District *',
+                      labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                      filled: true,
+                      fillColor: const Color(0xFFF8F9FA),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14.w,
+                        vertical: 12.h,
+                      ),
+                    ),
+                    isExpanded: true,
+                    items: districts.map((d) {
+                      final name = d['name']?.toString() ?? '';
+                      final bnName = d['bnName']?.toString() ?? '';
+                      return DropdownMenuItem<String>(
+                        value: d['id']?.toString(),
+                        child: Text(
+                          bnName.isNotEmpty ? '$name ($bnName)' : name,
+                          style: GoogleFonts.lato(fontSize: 13.sp),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        selectedDistrictId.value = val;
+                        loadUpazilas(val);
+                      }
+                    },
+                  );
+                }),
+                SizedBox(height: 10.h),
+
+                // Upazila Dropdown
+                Obx(() {
+                  if (isLoadingUpazilas.value) {
+                    return Container(
+                      height: 50.h,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  return DropdownButtonFormField<String>(
+                    initialValue: selectedUpazilaId.value,
+                    decoration: InputDecoration(
+                      labelText: 'Upazila / Area *',
+                      labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                      filled: true,
+                      fillColor: const Color(0xFFF8F9FA),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14.w,
+                        vertical: 12.h,
+                      ),
+                    ),
+                    isExpanded: true,
+                    items: upazilas.map((u) {
+                      final name = u['name']?.toString() ?? '';
+                      final bnName = u['bnName']?.toString() ?? '';
+                      return DropdownMenuItem<String>(
+                        value: u['id']?.toString(),
+                        child: Text(
+                          bnName.isNotEmpty ? '$name ($bnName)' : name,
+                          style: GoogleFonts.lato(fontSize: 13.sp),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        selectedUpazilaId.value = val;
+                      }
+                    },
+                  );
+                }),
+                SizedBox(height: 10.h),
+
+                // Street / House / Road Details
+                TextField(
+                  controller: streetCtrl,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'House / Road / Flat / Area Details *',
+                    labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(height: 10.h),
-            ],
+                SizedBox(height: 10.h),
+
+                // Postal Code
+                TextField(
+                  controller: postalCodeCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Postal Code (e.g. 1205)',
+                    labelStyle: GoogleFonts.lato(fontSize: 13.sp),
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20.h),
+
+                // Save Button
+                Obx(
+                  () => SizedBox(
+                    width: double.infinity,
+                    height: 48.h,
+                    child: ElevatedButton(
+                      onPressed: isSaving.value
+                          ? null
+                          : () async {
+                              final name = nameCtrl.text.trim();
+                              final rawPhoneInput = phoneCtrl.text.trim();
+                              final street = streetCtrl.text.trim();
+                              final postal =
+                                  postalCodeCtrl.text.trim().isNotEmpty
+                                      ? postalCodeCtrl.text.trim()
+                                      : '1000';
+
+                              if (name.isEmpty ||
+                                  rawPhoneInput.isEmpty ||
+                                  street.isEmpty) {
+                                Get.snackbar(
+                                  'Missing Information',
+                                  'Please fill all required fields',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColor.error,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+
+                              // Format & validate Bangladesh mobile number
+                              var phone = rawPhoneInput.replaceAll(
+                                  RegExp(r'[\s\-\(\)]'), '');
+                              if (phone.startsWith('+880')) {
+                                phone = phone.substring(3);
+                              } else if (phone.startsWith('880')) {
+                                phone = phone.substring(2);
+                              } else if (phone.length == 10 &&
+                                  phone.startsWith('1')) {
+                                phone = '0$phone';
+                              }
+
+                              if (!RegExp(r'^01[3-9]\d{8}$')
+                                  .hasMatch(phone)) {
+                                Get.snackbar(
+                                  'Invalid Phone Number',
+                                  'Please enter a valid 11-digit mobile number (e.g. 017XXXXXXXX)',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColor.error,
+                                  colorText: Colors.white,
+                                  duration: const Duration(seconds: 4),
+                                );
+                                return;
+                              }
+
+                              // Resolve selected geo names
+                              final divItem = divisions.firstWhere(
+                                (d) =>
+                                    d['id']?.toString() ==
+                                    selectedDivisionId.value,
+                                orElse: () => {},
+                              );
+                              final distItem = districts.firstWhere(
+                                (d) =>
+                                    d['id']?.toString() ==
+                                    selectedDistrictId.value,
+                                orElse: () => {},
+                              );
+                              final upazilaItem = upazilas.firstWhere(
+                                (u) =>
+                                    u['id']?.toString() ==
+                                    selectedUpazilaId.value,
+                                orElse: () => {},
+                              );
+
+                              final divName =
+                                  divItem['name']?.toString() ?? '';
+                              final distName =
+                                  distItem['name']?.toString() ?? '';
+                              final upazilaName =
+                                  upazilaItem['name']?.toString() ?? '';
+
+                              if (divName.isEmpty ||
+                                  distName.isEmpty ||
+                                  upazilaName.isEmpty) {
+                                Get.snackbar(
+                                  'Location Required',
+                                  'Please select Division, District, and Upazila',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColor.error,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+
+                              isSaving.value = true;
+
+                              try {
+                                final response = await dioPost(
+                                  endUrl: 'addresses',
+                                  data: {
+                                    'label': selectedType.value,
+                                    'fullName': name,
+                                    'phone': phone,
+                                    'addressLine': street,
+                                    'division': divName,
+                                    'district': distName,
+                                    'upazila': upazilaName,
+                                    'postalCode': postal,
+                                    'isDefault': addresses.isEmpty,
+                                  },
+                                  isJson: true,
+                                );
+
+                                isSaving.value = false;
+
+                                if (response.statusCode == 200 ||
+                                    response.statusCode == 201) {
+                                  Get.back(); // close bottomsheet only on success!
+                                  await fetchUserAddresses();
+                                  fetchQuote();
+
+                                  Get.snackbar(
+                                    'Address Saved',
+                                    'Delivery address added successfully',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor:
+                                        const Color(0xFF16A34A),
+                                    colorText: Colors.white,
+                                  );
+                                } else {
+                                  String errMsg = 'Failed to save address';
+                                  if (response.data is Map) {
+                                    final d = response.data as Map;
+                                    if (d['error'] is Map &&
+                                        d['error']['message'] != null) {
+                                      errMsg =
+                                          d['error']['message'].toString();
+                                    } else if (d['message'] != null) {
+                                      errMsg = d['message'].toString();
+                                    }
+                                  }
+                                  Get.snackbar(
+                                    'Unable to Save Address',
+                                    errMsg,
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: AppColor.error,
+                                    colorText: Colors.white,
+                                    duration: const Duration(seconds: 4),
+                                  );
+                                }
+                              } catch (_) {
+                                isSaving.value = false;
+                                Get.snackbar(
+                                  'Error',
+                                  'Network error while saving address',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColor.error,
+                                  colorText: Colors.white,
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      child: isSaving.value
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              'Save & Deliver Here',
+                              style: GoogleFonts.lato(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+              ],
+            ),
           ),
         ),
       ),

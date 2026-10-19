@@ -35,10 +35,12 @@ void _saveCookieFromResponse(DIO.Response response) {
         if (cookie.contains('alifworld_session=')) {
           final match = RegExp(r'alifworld_session=([^;]+)').firstMatch(cookie);
           if (match != null && match.group(1) != null) {
-            final sessionVal = match.group(1)!;
-            getBox.write('SESSION_COOKIE', 'alifworld_session=$sessionVal');
-            getBox.write(USER_TOKEN, sessionVal);
-            getBox.write(IS_USER_LOGGED_IN, true);
+            final sessionVal = match.group(1)!.trim();
+            if (sessionVal.isNotEmpty && sessionVal != 'deleted') {
+              getBox.write('SESSION_COOKIE', 'alifworld_session=$sessionVal');
+              getBox.write(USER_TOKEN, sessionVal);
+              getBox.write(IS_USER_LOGGED_IN, true);
+            }
           }
         }
       }

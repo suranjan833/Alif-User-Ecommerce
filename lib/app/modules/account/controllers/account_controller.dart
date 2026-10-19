@@ -6,9 +6,12 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../data/config/app_color.dart';
 import '../../../data/config/functions/dio_function/app_config.dart';
+import '../../../data/config/functions/dio_function/my_dio.dart';
 import '../../../data/mixins/skeleton_loading_mixin.dart';
+import '../../../data/models/user_model.dart';
 import '../../../data/services/app_translations.dart';
 import '../../../routes/app_pages.dart';
+import '../../my_profile/controllers/my_profile_controller.dart';
 
 class AccountMenuItem {
   final String title;
@@ -32,6 +35,7 @@ class AccountSectionData {
 }
 
 class AccountController extends GetxController with SkeletonLoadingMixin {
+  final user = Rxn<UserModel>();
   final userName = 'User'.obs;
   final userEmail = 'user@example.com'.obs;
   final userPhone = '+91 98765 43210'.obs;
@@ -39,13 +43,23 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
   final currentLanguage = 'English'.obs;
   final currentLangCode = 'en'.obs;
 
+  bool get _hasAuth {
+    final token = getBox.read(USER_TOKEN);
+    final sessionCookie = getBox.read('SESSION_COOKIE');
+    return (token != null && token.toString().trim().isNotEmpty) ||
+        (sessionCookie != null && sessionCookie.toString().trim().isNotEmpty);
+  }
+
   @override
   void onInit() {
     super.onInit();
     _loadUserData();
-    // Defer so the shimmer is visible when the tab is first opened.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      initSkeletonLoading();
+      if (_hasAuth) {
+        fetchUserProfile();
+      } else {
+        isLoading.value = false;
+      }
     });
   }
 
@@ -61,6 +75,59 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
     final savedPhone = getBox.read(USER_PHONE);
     if (savedPhone != null && savedPhone.toString().trim().isNotEmpty) {
       userPhone.value = savedPhone.toString().trim();
+    }
+  }
+
+  /// GET /auth/me - Fetch authenticated user profile details
+  Future<void> fetchUserProfile() async {
+    if (!_hasAuth) {
+      isLoading.value = false;
+      return;
+    }
+
+    try {
+      final response = await dioGet('auth/me');
+      if (response.statusCode == 200 && response.data != null) {
+        dynamic rawData = response.data;
+        if (rawData is Map && rawData.containsKey('data')) {
+          rawData = rawData['data'];
+        }
+        if (rawData is Map && rawData.containsKey('user')) {
+          final userMap = Map<String, dynamic>.from(rawData['user']);
+          final userModel = UserModel.fromJson(userMap);
+          user.value = userModel;
+
+          if (userModel.displayName.isNotEmpty) {
+            userName.value = userModel.displayName;
+            getBox.write(USER_NAME, userModel.displayName);
+          }
+          if (userModel.email != null && userModel.email!.isNotEmpty) {
+            userEmail.value = userModel.email!;
+            getBox.write(USER_EMAIL, userModel.email!);
+          }
+          if (userModel.phone != null && userModel.phone!.isNotEmpty) {
+            userPhone.value = userModel.phone!;
+            getBox.write(USER_PHONE, userModel.phone!);
+          }
+          if (userModel.id != null) {
+            getBox.write(USER_ID, userModel.id!);
+          }
+          if (userModel.createdAt != null && userModel.createdAt!.isNotEmpty) {
+            try {
+              final dt = DateTime.parse(userModel.createdAt!);
+              const months = [
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+              ];
+              memberSince.value = 'Member since ${months[dt.month - 1]}-${dt.year}';
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching user profile: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -471,10 +538,11 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
               SizedBox(height: 6.h),
               TextField(
                 controller: phoneController,
+                readOnly: true,
                 keyboardType: TextInputType.phone,
                 style: GoogleFonts.lato(
                   fontSize: 14.sp,
-                  color: AppColor.textPrimary,
+                  color: const Color(0xFF64748B),
                 ),
                 decoration: InputDecoration(
                   hintText: 'Enter phone number',
@@ -483,6 +551,13 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
                     size: 20.r,
                     color: AppColor.textSecondary,
                   ),
+                  suffixIcon: Icon(
+                    Iconsax.lock,
+                    size: 16.r,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF1F5F9),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 14.w,
                     vertical: 12.h,
@@ -503,28 +578,132 @@ class AccountController extends GetxController with SkeletonLoadingMixin {
                 width: double.infinity,
                 height: 48.h,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (nameController.text.trim().isNotEmpty) {
-                      userName.value = nameController.text.trim();
-                      getBox.write(USER_NAME, userName.value);
+                  onPressed: () async {
+                    final newName = nameController.text.trim();
+                    final newEmail = emailController.text.trim();
+
+                    if (newName.isEmpty) {
+                      Get.snackbar(
+                        'Required',
+                        'Please enter your full name',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColor.error,
+                        colorText: Colors.white,
+                      );
+                      return;
                     }
-                    if (emailController.text.trim().isNotEmpty) {
-                      userEmail.value = emailController.text.trim();
-                      getBox.write(USER_EMAIL, userEmail.value);
+
+                    if (newEmail.isNotEmpty && !GetUtils.isEmail(newEmail)) {
+                      Get.snackbar(
+                        'Invalid Email',
+                        'Please enter a valid email address',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColor.error,
+                        colorText: Colors.white,
+                      );
+                      return;
                     }
-                    if (phoneController.text.trim().isNotEmpty) {
-                      userPhone.value = phoneController.text.trim();
-                      getBox.write(USER_PHONE, userPhone.value);
+
+                    final nameParts = newName.split(RegExp(r'\s+'));
+                    final firstName = nameParts.first;
+                    final lastName = nameParts.length > 1
+                        ? nameParts.sublist(1).join(' ')
+                        : '';
+
+                    if (_hasAuth) {
+                      try {
+                        final response = await dioPut(
+                          endUrl: 'auth/me',
+                          data: {
+                            'firstName': firstName,
+                            'lastName': lastName,
+                            if (newEmail.isNotEmpty) 'email': newEmail,
+                          },
+                          isJson: true,
+                        );
+
+                        if (response.statusCode == 200 ||
+                            response.statusCode == 201) {
+                          userName.value = newName;
+                          if (newEmail.isNotEmpty) userEmail.value = newEmail;
+                          getBox.write(USER_NAME, newName);
+                          if (newEmail.isNotEmpty) {
+                            getBox.write(USER_EMAIL, newEmail);
+                          }
+
+                          if (Get.isRegistered<MyProfileController>()) {
+                            final myProfileCtrl =
+                                Get.find<MyProfileController>();
+                            myProfileCtrl.userName.value = newName;
+                            myProfileCtrl.userEmail.value = newEmail;
+                            myProfileCtrl.nameController.text = newName;
+                            myProfileCtrl.emailController.text = newEmail;
+                          }
+
+                          await fetchUserProfile();
+                          Get.back();
+                          Get.snackbar(
+                            'Success',
+                            'Profile updated successfully',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: AppColor.textPrimary,
+                            colorText: Colors.white,
+                            duration: const Duration(seconds: 2),
+                          );
+                        } else {
+                          String msg = 'Could not update profile';
+                          if (response.data is Map) {
+                            final data = response.data as Map;
+                            if (data['error'] is Map) {
+                              final code = data['error']['code']?.toString();
+                              final rawMsg =
+                                  data['error']['message']?.toString();
+                              if (code == 'EMAIL_TAKEN') {
+                                msg =
+                                    'This email address is already in use by another account.';
+                              } else if (code == 'UNAUTHENTICATED') {
+                                msg = 'Your session has expired. Please log in again.';
+                              } else if (rawMsg != null && rawMsg.isNotEmpty) {
+                                msg = rawMsg;
+                              }
+                            } else if (data['message'] != null) {
+                              msg = data['message'].toString();
+                            }
+                          }
+                          Get.snackbar(
+                            'Update Failed',
+                            msg,
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: AppColor.error,
+                            colorText: Colors.white,
+                          );
+                        }
+                      } catch (e) {
+                        Get.snackbar(
+                          'Error',
+                          'Network error. Please try again.',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: AppColor.error,
+                          colorText: Colors.white,
+                        );
+                      }
+                    } else {
+                      userName.value = newName;
+                      if (newEmail.isNotEmpty) userEmail.value = newEmail;
+                      getBox.write(USER_NAME, newName);
+                      if (newEmail.isNotEmpty) {
+                        getBox.write(USER_EMAIL, newEmail);
+                      }
+                      Get.back();
+                      Get.snackbar(
+                        'Success',
+                        'Profile updated successfully',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColor.textPrimary,
+                        colorText: Colors.white,
+                        duration: const Duration(seconds: 2),
+                      );
                     }
-                    Get.back();
-                    Get.snackbar(
-                      'Success',
-                      'Profile updated successfully',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: AppColor.textPrimary,
-                      colorText: Colors.white,
-                      duration: const Duration(seconds: 2),
-                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColor.primary,

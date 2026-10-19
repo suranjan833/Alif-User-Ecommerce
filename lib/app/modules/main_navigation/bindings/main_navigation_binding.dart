@@ -20,7 +20,7 @@ class MainNavigationBinding extends Bindings {
       fenix: true,
     );
     Get.lazyPut<DiscoverController>(() => DiscoverController(), fenix: true);
-    Get.lazyPut<BagController>(() => BagController(), fenix: true);
+    Get.put<BagController>(BagController(), permanent: true);
     Get.lazyPut<AccountController>(() => AccountController(), fenix: true);
   }
 }

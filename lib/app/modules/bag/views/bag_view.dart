@@ -16,8 +16,14 @@ class BagView extends GetView<BagController> {
   @override
   Widget build(BuildContext context) {
     if (!Get.isRegistered<BagController>()) {
-      Get.put(BagController());
+      Get.put(BagController(), permanent: true);
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<BagController>()) {
+        Get.find<BagController>().fetchCart(showLoading: false);
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
@@ -56,7 +62,7 @@ class BagView extends GetView<BagController> {
         if (controller.cartItems.isEmpty) {
           return RefreshIndicator(
             color: AppColor.primary,
-            onRefresh: () => controller.fetchCart(showLoading: false),
+            onRefresh: () => controller.refreshCart(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: SizedBox(
@@ -142,7 +148,7 @@ class BagView extends GetView<BagController> {
             Expanded(
               child: RefreshIndicator(
                 color: AppColor.primary,
-                onRefresh: () => controller.fetchCart(showLoading: false),
+                onRefresh: () => controller.refreshCart(),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),

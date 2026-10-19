@@ -347,6 +347,7 @@ class CategoryProductsController extends GetxController {
       'price': product.price,
       'image': product.image ?? '',
       'brand': product.brand ?? 'Alif',
+      'slug': product.slug,
     });
 
     Get.snackbar(

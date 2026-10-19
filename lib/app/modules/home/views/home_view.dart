@@ -15,6 +15,7 @@ import '../../bag/controllers/bag_controller.dart';
 import '../controllers/home_controller.dart';
 import '../models/home_category_model.dart';
 import '../models/showcase_model.dart';
+import 'widgets/auto_scrolling_mini_banners.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -114,61 +115,12 @@ class HomeView extends GetView<HomeController> {
 
                             SizedBox(height: 24.h),
 
-                            // 6. Category Showcase Mini Banners from catalog/showcase API
+                            // 6. Category Showcase Mini Banners (Image-only, Auto-scrolling)
                             Obx(() {
                               final miniBanners =
                                   controller.showcase.value?.miniBanners ?? [];
-
-                              if (miniBanners.isNotEmpty) {
-                                return SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  padding:
-                                      EdgeInsets.symmetric(horizontal: 16.w),
-                                  physics: const BouncingScrollPhysics(),
-                                  child: Row(
-                                    children: miniBanners
-                                        .map((mb) => _buildMiniBannerCard(mb))
-                                        .toList(),
-                                  ),
-                                );
-                              }
-
-                              return SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                                physics: const BouncingScrollPhysics(),
-                                child: Row(
-                                  children: [
-                                    _buildShowcaseCard(
-                                      title: 'Bath & Body',
-                                      subtitle:
-                                          'Self-care essentials\nfor a fresh routine',
-                                      bgColor: const Color(0xFFD4EFE8),
-                                      imageUrl:
-                                          'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=400&auto=format&fit=crop',
-                                      slug: 'bath-body',
-                                    ),
-                                    SizedBox(width: 12.w),
-                                    _buildShowcaseCard(
-                                      title: 'Makeup',
-                                      subtitle:
-                                          'Beauty essentials\nfor every look',
-                                      bgColor: const Color(0xFFFDE2E4),
-                                      imageUrl:
-                                          'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop',
-                                      slug: 'makeup',
-                                    ),
-                                    SizedBox(width: 12.w),
-                                    _buildShowcaseCard(
-                                      title: 'Fragrance &\nDeodorant',
-                                      subtitle: 'Fresh scents that\nlast all day',
-                                      bgColor: const Color(0xFFE6E1FA),
-                                      imageUrl:
-                                          'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=400&auto=format&fit=crop',
-                                      slug: 'fragrance',
-                                    ),
-                                  ],
-                                ),
+                              return AutoScrollingMiniBanners(
+                                miniBanners: miniBanners,
                               );
                             }),
 
@@ -1325,185 +1277,6 @@ class HomeView extends GetView<HomeController> {
       ),
     );
   }
-
-  Widget _buildShowcaseCard({
-    required String title,
-    required String subtitle,
-    required Color bgColor,
-    required String imageUrl,
-    String? slug,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap ??
-          () {
-            Get.toNamed(
-              Routes.CATEGORY_PRODUCTS,
-              arguments: {
-                'name': title.replaceAll('\n', ' '),
-                'slug': slug ?? '',
-              },
-            );
-          },
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 155.w,
-        height: 230.h,
-        padding: EdgeInsets.all(14.w),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: GoogleFonts.lato(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w900,
-                color: AppColor.textPrimary,
-                height: 1.1,
-              ),
-            ),
-            SizedBox(height: 6.h),
-            Text(
-              subtitle,
-              style: GoogleFonts.lato(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w400,
-                color: AppColor.textSecondary,
-                height: 1.2,
-              ),
-            ),
-            const Spacer(),
-            Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12.r),
-                child: Image.network(
-                  imageUrl,
-                  height: 100.h,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    Iconsax.image,
-                    size: 48.r,
-                    color: AppColor.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMiniBannerCard(ShowcaseMiniBannerModel mb) {
-    const bgColors = [
-      Color(0xFFD4EFE8),
-      Color(0xFFFDE2E4),
-      Color(0xFFE6E1FA),
-      Color(0xFFFEF3C7),
-      Color(0xFFE0F2FE),
-      Color(0xFFFCE7F3),
-    ];
-    final color = bgColors[mb.slug.hashCode.abs() % bgColors.length];
-
-    return GestureDetector(
-      onTap: () {
-        Get.toNamed(
-          Routes.CATEGORY_PRODUCTS,
-          arguments: {
-            'name': mb.name,
-            'slug': mb.slug,
-          },
-        );
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 155.w,
-        height: 230.h,
-        margin: EdgeInsets.only(right: 12.w),
-        padding: EdgeInsets.all(14.w),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (mb.badge != null && mb.badge!.isNotEmpty)
-              Container(
-                margin: EdgeInsets.only(bottom: 6.h),
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Text(
-                  mb.badge!.toUpperCase(),
-                  style: GoogleFonts.lato(
-                    fontSize: 9.sp,
-                    fontWeight: FontWeight.w800,
-                    color: AppColor.textPrimary,
-                  ),
-                ),
-              ),
-            Text(
-              mb.name,
-              style: GoogleFonts.lato(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w900,
-                color: AppColor.textPrimary,
-                height: 1.1,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (mb.tagline != null && mb.tagline!.isNotEmpty) ...[
-              SizedBox(height: 6.h),
-              Text(
-                mb.tagline!,
-                style: GoogleFonts.lato(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w400,
-                  color: AppColor.textSecondary,
-                  height: 1.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            const Spacer(),
-            Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12.r),
-                child: mb.fullImageUrl.isNotEmpty
-                    ? Image.network(
-                        mb.fullImageUrl,
-                        height: 100.h,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Iconsax.image,
-                          size: 48.r,
-                          color: AppColor.textSecondary,
-                        ),
-                      )
-                    : Icon(
-                        Iconsax.image,
-                        size: 48.r,
-                        color: AppColor.textSecondary,
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildBrandCard(Map<String, String> brand) {
     return Container(
       width: 135.w,

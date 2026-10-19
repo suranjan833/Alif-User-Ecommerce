@@ -182,9 +182,11 @@ class ShowcaseProductModel {
 
     List<Map<String, dynamic>> parsedVariants = [];
     if (json['variants'] is List) {
-      parsedVariants = (json['variants'] as List)
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      for (var v in json['variants'] as List) {
+        if (v is Map) {
+          parsedVariants.add(Map<String, dynamic>.from(v));
+        }
+      }
     }
 
     // Fallback to first variant if product-level price is null
@@ -274,8 +276,17 @@ class ShowcaseProductModel {
   }
 
   Map<String, dynamic> toDetailsMap() {
+    String? defaultVariantId;
+    if (variants.isNotEmpty) {
+      final fv = variants.first;
+      if (fv['id'] != null) {
+        defaultVariantId = fv['id']?.toString();
+      }
+    }
     return {
       'id': id,
+      'productId': id,
+      'variantId': defaultVariantId,
       'title': name,
       'name': name,
       'slug': slug,

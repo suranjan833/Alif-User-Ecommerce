@@ -16,6 +16,8 @@ const String USER_EMAIL = "user_email";
 const String USER_PASSWORD = "password";
 
 const String USER_PHONE = "user_phone";
+const String USER_GENDER = "user_gender";
+const String USER_DOB = "user_dob";
 const String USER_LOGIN = "login_true";
 const String HIDEBUYNOW = "buy_now";
 const String USER_OTP = "MY OTP";

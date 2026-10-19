@@ -92,14 +92,25 @@ class AccountView extends GetView<AccountController> {
                                 ),
                                 SizedBox(height: 2.h),
                                 Obx(
-                                  () => Text(
-                                    controller.memberSince.value,
-                                    style: GoogleFonts.lato(
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w400,
-                                      color: AppColor.textSecondary,
-                                    ),
-                                  ),
+                                  () {
+                                    final phone = controller.userPhone.value;
+                                    final email = controller.userEmail.value;
+                                    final subtitle = phone.isNotEmpty &&
+                                            phone != '+91 98765 43210'
+                                        ? (phone.startsWith('+') ? phone : '+$phone')
+                                        : (email.isNotEmpty &&
+                                                email != 'user@example.com'
+                                            ? email
+                                            : controller.memberSince.value);
+                                    return Text(
+                                      subtitle,
+                                      style: GoogleFonts.lato(
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.w400,
+                                        color: AppColor.textSecondary,
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
